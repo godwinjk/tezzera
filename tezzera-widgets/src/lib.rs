@@ -4,23 +4,43 @@
 //! `tezzera-core` (traits and element tree), `tezzera-layout` (constraint-based
 //! layout), `tezzera-render` (pixel painting), and `tezzera-state` (atoms).
 //!
-//! # Phase 1 contents
+//! # Phase 2 widget set
 //!
-//! - [`Text`] — plain text leaf widget
-//! - [`Button`] — pressable button with an optional callback
-//! - [`counter_app`] — integration demo that renders frames to a pixel buffer
+//! | Widget | Description |
+//! |---|---|
+//! | [`Text`] | Plain text leaf — color and size |
+//! | [`Button`] | Clickable rectangle with label and variant styling |
+//! | [`TextInput`] | Single-line input with cursor and obscure mode |
+//! | [`Divider`] | Horizontal or vertical separator line |
+//! | [`Padding`] | Adds insets around a child widget |
+//! | [`Center`] | Centers a child inside its container |
+//!
+//! # Quick start
+//!
+//! ```rust,ignore
+//! use tezzera_widgets::prelude::*;
+//! let btn = Button::new("Save").variant(ButtonVariant::Primary);
+//! ```
 
 pub mod button;
+pub mod center;
 pub mod counter_app;
+pub mod divider;
+pub mod padding;
+pub mod prelude;
 pub mod text;
+pub mod text_input;
 
-pub use button::Button;
+pub use prelude::*;
+
+// Phase 1 integration demo — kept for backward compatibility.
 pub use counter_app::{render_counter_frame, run_counter_simulation};
-pub use text::Text;
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    // ── counter_app integration tests (Phase 1) ───────────────────────────────
 
     #[test]
     fn counter_simulation_increments_correctly() {
@@ -53,34 +73,5 @@ mod tests {
         let frame_99 = render_counter_frame(99, 200, 100);
         // "Count: 0" vs "Count: 99" — pixels must differ
         assert_ne!(frame_0, frame_99);
-    }
-
-    #[test]
-    fn text_natural_size_scales_with_content() {
-        let short = Text::new("Hi").natural_size();
-        let long = Text::new("Hello World").natural_size();
-        assert!(long.width > short.width);
-    }
-
-    #[test]
-    fn button_fires_on_press() {
-        use std::sync::{Arc, atomic::{AtomicBool, Ordering}};
-        let fired = Arc::new(AtomicBool::new(false));
-        let fired2 = fired.clone();
-        let btn = Button::new("Click").on_press(move || fired2.store(true, Ordering::SeqCst));
-        btn.fire_press();
-        assert!(fired.load(Ordering::SeqCst));
-    }
-
-    #[test]
-    fn disabled_button_does_not_fire() {
-        use std::sync::{Arc, atomic::{AtomicBool, Ordering}};
-        let fired = Arc::new(AtomicBool::new(false));
-        let fired2 = fired.clone();
-        let btn = Button::new("Click")
-            .on_press(move || fired2.store(true, Ordering::SeqCst))
-            .disabled(true);
-        btn.fire_press();
-        assert!(!fired.load(Ordering::SeqCst));
     }
 }
