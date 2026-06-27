@@ -72,9 +72,10 @@ fn print_usage() {
     println!("  --trace=<filter>  Trace filter: all | state | network | performance | <ComponentName>");
     println!();
     println!("OPTIONS (build):");
-    println!("  --target <target> Build target: desktop (Phase 1)");
+    println!("  --target <target> Build target: desktop | web");
     println!();
     println!("EXAMPLES:");
     println!("  tzr dev --trace=state");
     println!("  tzr build --target desktop");
+    println!("  tzr build --target web");
 }
