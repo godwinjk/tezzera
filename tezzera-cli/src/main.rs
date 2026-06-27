@@ -89,13 +89,14 @@ fn print_usage() {
     println!();
     println!("COMMANDS:");
     println!("  new <name>        Scaffold a new TEZZERA app project");
-    println!("  dev               Start dev server with terminal trace output");
+    println!("  dev               Start desktop app in dev mode (cargo run)");
     println!("  build             Build the app for a target platform");
     println!("  package           Bundle for distribution (.app / .deb / .exe)");
     println!("  help              Print this message");
     println!();
     println!("OPTIONS (dev):");
-    println!("  --trace=<filter>  Trace filter: all | state | network | performance | <ComponentName>");
+    println!("  --target web      Build WASM and serve at http://localhost:3000");
+    println!("  --port <n>        Port for web dev server (default: 3000)");
     println!();
     println!("OPTIONS (build):");
     println!("  --target <target> Build target: desktop | web");
@@ -106,7 +107,9 @@ fn print_usage() {
     println!("  --out <dir>       Output directory (default: dist/)");
     println!();
     println!("EXAMPLES:");
-    println!("  tzr dev --trace=state");
+    println!("  tzr dev");
+    println!("  tzr dev --target web");
+    println!("  tzr dev --target web --port 8080");
     println!("  tzr build --target desktop");
     println!("  tzr build --target web");
 }
