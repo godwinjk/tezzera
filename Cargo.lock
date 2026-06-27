@@ -17,6 +17,10 @@ dependencies = [
 [[package]]
 name = "tezzera-layout"
 version = "0.1.0"
+dependencies = [
+ "tezzera-core",
+ "tezzera-trace",
+]
 
 [[package]]
 name = "tezzera-macros"
