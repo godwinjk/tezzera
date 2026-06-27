@@ -6,7 +6,7 @@
 
 use tezzera_core::types::{Point, Rect, Size};
 use tezzera_layout::{Column, Constraints, Row};
-use tezzera_render::{Color, SkiaCanvas};
+use tezzera_render::{Color, FontCache, SkiaCanvas};
 use tezzera_state::use_atom;
 
 const W: u32 = 400;
@@ -23,21 +23,19 @@ const TEXT_MUTED:   Color = Color::rgb(140, 145, 175);
 const GREEN:        Color = Color::rgb( 72, 199, 116);
 const ORANGE:       Color = Color::rgb(255, 160,  60);
 
-fn bar(c: &mut SkiaCanvas, text: &str, x: f32, y: f32, color: Color, cw: f32, ch: f32) {
-    c.fill_rect(Rect { origin: Point { x, y }, size: Size { width: text.len() as f32 * cw, height: ch } }, color);
-}
-
-fn stat_card(c: &mut SkiaCanvas, x: f32, y: f32, w: f32, h: f32, value: &str, label: &str, color: Color) {
+fn stat_card(c: &mut SkiaCanvas, font: &FontCache, x: f32, y: f32, w: f32, h: f32, value: &str, label: &str, color: Color) {
     c.fill_rect(Rect { origin: Point { x, y }, size: Size { width: w, height: h } }, CARD_BG);
     c.stroke_rect(Rect { origin: Point { x, y }, size: Size { width: w, height: h } }, CARD_BORDER, 1.0);
-    // value
-    bar(c, value, x + (w - value.len() as f32 * 8.5) * 0.5, y + 10.0, color, 8.5, 16.0);
+    // value — center using monospace approximation (px * 0.55 per glyph)
+    let vw = value.len() as f32 * (16.0 * 0.55);
+    c.draw_text(value, Point { x: x + (w - vw) * 0.5, y: y + 10.0 }, color, font, 16.0);
     // label
-    bar(c, label, x + (w - label.len() as f32 * 6.0) * 0.5, y + 32.0, TEXT_MUTED, 6.0, 10.0);
+    let lw = label.len() as f32 * (10.0 * 0.55);
+    c.draw_text(label, Point { x: x + (w - lw) * 0.5, y: y + 32.0 }, TEXT_MUTED, font, 10.0);
 }
 
-fn skill_bar(c: &mut SkiaCanvas, x: f32, y: f32, w: f32, label: &str, pct: f32, color: Color) {
-    bar(c, label, x, y, TEXT_MUTED, 6.0, 10.0);
+fn skill_bar(c: &mut SkiaCanvas, font: &FontCache, x: f32, y: f32, w: f32, label: &str, pct: f32, color: Color) {
+    c.draw_text(label, Point { x, y }, TEXT_MUTED, font, 10.0);
     let track_y = y + 14.0;
     // track
     c.fill_rect(Rect { origin: Point { x, y: track_y }, size: Size { width: w, height: 6.0 } }, Color::rgb(50,52,72));
@@ -58,6 +56,8 @@ fn main() {
 
     let follows = follow_count.get();
     let followed = is_followed.get();
+
+    let font = FontCache::system_mono().expect("no system font");
 
     let mut c = SkiaCanvas::new(W, H);
     c.clear(BG);
@@ -93,8 +93,11 @@ fn main() {
     // ── Name and handle ──────────────────────────────────────────────────────
     let name  = "Alexandra Kim";
     let handle = "@alexkim  •  Senior Engineer";
-    bar(&mut c, name,   (W as f32 - name.len()   as f32 * 9.0) / 2.0, 205.0, TEXT_PRIMARY, 9.0, 17.0);
-    bar(&mut c, handle, (W as f32 - handle.len() as f32 * 6.5) / 2.0, 228.0, TEXT_MUTED,   6.5, 11.0);
+    // Center using monospace glyph-width approximation
+    let name_w   = name.len()   as f32 * (17.0 * 0.55);
+    let handle_w = handle.len() as f32 * (11.0 * 0.55);
+    c.draw_text(name,   Point { x: (W as f32 - name_w)   / 2.0, y: 205.0 }, TEXT_PRIMARY, &font, 17.0);
+    c.draw_text(handle, Point { x: (W as f32 - handle_w) / 2.0, y: 228.0 }, TEXT_MUTED,   &font, 11.0);
 
     // ── Stats row (followers / posts / projects) ─────────────────────────────
     let stat_sizes = vec![
@@ -113,23 +116,26 @@ fn main() {
     ];
     for (i, (val, lbl, color)) in stat_data.iter().enumerate() {
         let p = stat_layout.child_positions[i];
-        stat_card(&mut c, 20.0 + p.x, 254.0 + p.y, 110.0, 60.0, val, lbl, *color);
+        stat_card(&mut c, &font, 20.0 + p.x, 254.0 + p.y, 110.0, 60.0, val, lbl, *color);
     }
 
     // ── Follow / Message buttons ─────────────────────────────────────────────
     let btn_y = 330.0_f32;
     let btn_color = if followed { ACCENT_DIM } else { ACCENT };
-    let follow_label = if followed { "Following  ✓" } else { "Follow" };
+    let follow_label = if followed { "Following  \u{2713}" } else { "Follow" };
     c.fill_rect(Rect { origin: Point { x: 20.0, y: btn_y }, size: Size { width: 170.0, height: 36.0 } }, btn_color);
-    bar(&mut c, follow_label, 20.0 + (170.0 - follow_label.len() as f32 * 7.0) / 2.0, btn_y + 12.0, Color::WHITE, 7.0, 12.0);
+    let fl_w = follow_label.len() as f32 * (12.0 * 0.55);
+    c.draw_text(follow_label, Point { x: 20.0 + (170.0 - fl_w) / 2.0, y: btn_y + 12.0 }, Color::WHITE, &font, 12.0);
 
     c.stroke_rect(Rect { origin: Point { x: 204.0, y: btn_y }, size: Size { width: 170.0, height: 36.0 } }, ACCENT, 1.5);
-    bar(&mut c, "Message", 204.0 + (170.0 - 7.0 * 7.0) / 2.0, btn_y + 12.0, ACCENT, 7.0, 12.0);
+    let msg = "Message";
+    let msg_w = msg.len() as f32 * (12.0 * 0.55);
+    c.draw_text(msg, Point { x: 204.0 + (170.0 - msg_w) / 2.0, y: btn_y + 12.0 }, ACCENT, &font, 12.0);
 
     // ── Bio section ──────────────────────────────────────────────────────────
     let bio_y = 384.0_f32;
     c.fill_rect(Rect { origin: Point { x: 20.0, y: bio_y }, size: Size { width: W as f32 - 40.0, height: 1.0 } }, CARD_BORDER);
-    bar(&mut c, "About", 20.0, bio_y + 10.0, ACCENT, 7.0, 13.0);
+    c.draw_text("About", Point { x: 20.0, y: bio_y + 10.0 }, ACCENT, &font, 13.0);
 
     let bio_lines = [
         "Building next-gen UI frameworks in Rust.",
@@ -137,13 +143,13 @@ fn main() {
         "San Francisco, CA  •  he/him",
     ];
     for (i, line) in bio_lines.iter().enumerate() {
-        bar(&mut c, line, 20.0, bio_y + 30.0 + i as f32 * 18.0, TEXT_MUTED, 6.0, 11.0);
+        c.draw_text(line, Point { x: 20.0, y: bio_y + 30.0 + i as f32 * 18.0 }, TEXT_MUTED, &font, 11.0);
     }
 
     // ── Skills section ────────────────────────────────────────────────────────
     let sk_y = bio_y + 100.0;
     c.fill_rect(Rect { origin: Point { x: 20.0, y: sk_y - 4.0 }, size: Size { width: W as f32 - 40.0, height: 1.0 } }, CARD_BORDER);
-    bar(&mut c, "Skills", 20.0, sk_y + 8.0, ACCENT, 7.0, 13.0);
+    c.draw_text("Skills", Point { x: 20.0, y: sk_y + 8.0 }, ACCENT, &font, 13.0);
 
     let col_layout = Column::new()
         .spacing(22.0)
@@ -160,11 +166,13 @@ fn main() {
     ];
     for (i, (name, pct, color)) in skills.iter().enumerate() {
         let p = col_layout.child_positions[i];
-        skill_bar(&mut c, 20.0, sk_y + 30.0 + p.y, W as f32 - 56.0, name, *pct, *color);
+        skill_bar(&mut c, &font, 20.0, sk_y + 30.0 + p.y, W as f32 - 56.0, name, *pct, *color);
     }
 
     // ── Footer tag ────────────────────────────────────────────────────────────
-    bar(&mut c, "TEZZERA UI  •  Profile Card Example", (W as f32 - 36.0 * 6.5) / 2.0, H as f32 - 18.0, Color::rgba(120,120,160,150), 6.0, 10.0);
+    let footer = "TEZZERA UI  •  Profile Card Example";
+    let footer_w = footer.len() as f32 * (10.0 * 0.55);
+    c.draw_text(footer, Point { x: (W as f32 - footer_w) / 2.0, y: H as f32 - 18.0 }, Color::rgba(120,120,160,150), &font, 10.0);
 
     let png = c.encode_png().expect("encode png");
     std::fs::write("profile_card.png", png).expect("write png");
