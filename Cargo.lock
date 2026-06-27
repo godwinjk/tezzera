@@ -1457,6 +1457,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "tezzera-hot-reload"
+version = "0.1.0"
+dependencies = [
+ "tezzera-trace",
+]
+
+[[package]]
 name = "tezzera-layout"
 version = "0.1.0"
 dependencies = [

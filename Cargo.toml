@@ -14,6 +14,7 @@ members = [
     "tezzera-animate",
     "tezzera-scroll",
     "tezzera-nav",
+    "tezzera-hot-reload",
 ]
 resolver = "2"
 
