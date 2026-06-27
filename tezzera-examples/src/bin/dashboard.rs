@@ -6,7 +6,7 @@
 
 use tezzera_core::types::{Point, Rect, Size};
 use tezzera_layout::{Column, Constraints, Row};
-use tezzera_render::{Color, SkiaCanvas};
+use tezzera_render::{Color, FontCache, SkiaCanvas};
 use tezzera_state::use_atom;
 
 const W: u32 = 900;
@@ -25,24 +25,20 @@ const RED:         Color = Color::rgb(255,  90,  80);
 const ORANGE:      Color = Color::rgb(255, 165,  55);
 const PURPLE:      Color = Color::rgb(180, 100, 255);
 
-fn bar(c: &mut SkiaCanvas, text: &str, x: f32, y: f32, color: Color, cw: f32, ch: f32) {
-    c.fill_rect(Rect { origin: Point { x, y }, size: Size { width: text.len() as f32 * cw, height: ch } }, color);
-}
-
 fn card(c: &mut SkiaCanvas, x: f32, y: f32, w: f32, h: f32) {
     c.fill_rect(Rect { origin: Point { x, y }, size: Size { width: w, height: h } }, CARD_BG);
     c.stroke_rect(Rect { origin: Point { x, y }, size: Size { width: w, height: h } }, CARD_BORDER, 1.0);
 }
 
-fn stat_tile(c: &mut SkiaCanvas, x: f32, y: f32, w: f32, h: f32,
+fn stat_tile(c: &mut SkiaCanvas, font: &FontCache, x: f32, y: f32, w: f32, h: f32,
              label: &str, value: &str, delta: &str, positive: bool, accent: Color) {
     card(c, x, y, w, h);
     // left accent bar
     c.fill_rect(Rect { origin: Point { x, y }, size: Size { width: 3.0, height: h } }, accent);
-    bar(c, label, x + 14.0, y + 12.0, TEXT_LO, 6.0, 10.0);
-    bar(c, value, x + 14.0, y + 28.0, TEXT_HI, 9.0, 17.0);
+    c.draw_text(label, Point { x: x + 14.0, y: y + 12.0 }, TEXT_LO, font, 10.0);
+    c.draw_text(value, Point { x: x + 14.0, y: y + 28.0 }, TEXT_HI, font, 17.0);
     let delta_color = if positive { GREEN } else { RED };
-    bar(c, delta, x + 14.0, y + 51.0, delta_color, 6.0, 10.0);
+    c.draw_text(delta, Point { x: x + 14.0, y: y + 51.0 }, delta_color, font, 10.0);
     // mini sparkline (decorative)
     let spark_heights: [f32; 8] = [20.0, 28.0, 18.0, 32.0, 24.0, 35.0, 28.0, 38.0];
     let sx = x + w - 68.0;
@@ -55,10 +51,10 @@ fn stat_tile(c: &mut SkiaCanvas, x: f32, y: f32, w: f32, h: f32,
     }
 }
 
-fn bar_chart(c: &mut SkiaCanvas, x: f32, y: f32, w: f32, h: f32) {
+fn bar_chart(c: &mut SkiaCanvas, font: &FontCache, x: f32, y: f32, w: f32, h: f32) {
     card(c, x, y, w, h);
-    bar(c, "Revenue  (last 12 months)", x + 16.0, y + 14.0, TEXT_HI, 7.0, 13.0);
-    bar(c, "USD thousands", x + 16.0, y + 32.0, TEXT_LO, 5.5, 10.0);
+    c.draw_text("Revenue  (last 12 months)", Point { x: x + 16.0, y: y + 14.0 }, TEXT_HI, font, 13.0);
+    c.draw_text("USD thousands", Point { x: x + 16.0, y: y + 32.0 }, TEXT_LO, font, 10.0);
 
     let months = ["J","F","M","A","M","J","J","A","S","O","N","D"];
     let values: [f32; 12] = [42.0, 55.0, 48.0, 63.0, 71.0, 68.0, 82.0, 75.0, 90.0, 88.0, 95.0, 110.0];
@@ -80,14 +76,15 @@ fn bar_chart(c: &mut SkiaCanvas, x: f32, y: f32, w: f32, h: f32) {
         // Bar gradient (top brighter)
         c.fill_rect(Rect { origin: Point { x: bx, y: by }, size: Size { width: bw - 4.0, height: bh * 0.4 } }, ACCENT);
         c.fill_rect(Rect { origin: Point { x: bx, y: by + bh * 0.4 }, size: Size { width: bw - 4.0, height: bh * 0.6 } }, Color::rgb(55, 100, 190));
-        // Month label
-        bar(c, month, bx + (bw - 4.0 - 6.0) / 2.0, chart_y + chart_h + 4.0, TEXT_LO, 6.0, 9.0);
+        // Month label — center under bar using monospace glyph-width approximation
+        let lw = month.len() as f32 * (9.0 * 0.55);
+        c.draw_text(month, Point { x: bx + (bw - 4.0 - lw) / 2.0, y: chart_y + chart_h + 4.0 }, TEXT_LO, font, 9.0);
     }
 }
 
-fn activity_feed(c: &mut SkiaCanvas, x: f32, y: f32, w: f32, h: f32) {
+fn activity_feed(c: &mut SkiaCanvas, font: &FontCache, x: f32, y: f32, w: f32, h: f32) {
     card(c, x, y, w, h);
-    bar(c, "Live Activity", x + 14.0, y + 14.0, TEXT_HI, 7.0, 13.0);
+    c.draw_text("Live Activity", Point { x: x + 14.0, y: y + 14.0 }, TEXT_HI, font, 13.0);
 
     let events = [
         ("New user signup",       "2m ago",  GREEN),
@@ -114,19 +111,20 @@ fn activity_feed(c: &mut SkiaCanvas, x: f32, y: f32, w: f32, h: f32) {
             c.fill_rect(Rect { origin: Point { x: x + 1.0, y: ey }, size: Size { width: w - 2.0, height: 30.0 } }, Color::rgba(255,255,255,6));
         }
         c.fill_circle(Point { x: x + 21.0, y: ey + 15.0 }, 5.0, *dot_color);
-        bar(c, evt,  x + 34.0, ey + 9.0,  TEXT_HI, 6.0, 11.0);
-        bar(c, time, x + w - time.len() as f32 * 5.5 - 10.0, ey + 11.0, TEXT_LO, 5.5, 9.0);
+        c.draw_text(evt,  Point { x: x + 34.0, y: ey + 9.0 },  TEXT_HI, font, 11.0);
+        let time_x = x + w - time.len() as f32 * (9.0 * 0.55) - 10.0;
+        c.draw_text(time, Point { x: time_x, y: ey + 11.0 }, TEXT_LO, font, 9.0);
     }
 }
 
-fn sidebar(c: &mut SkiaCanvas) {
+fn sidebar(c: &mut SkiaCanvas, font: &FontCache) {
     let sw = 180.0_f32;
     c.fill_rect(Rect { origin: Point { x: 0.0, y: 0.0 }, size: Size { width: sw, height: H as f32 } }, SIDEBAR_BG);
     c.fill_rect(Rect { origin: Point { x: sw - 1.0, y: 0.0 }, size: Size { width: 1.0, height: H as f32 } }, CARD_BORDER);
 
     // Logo area
     c.fill_circle(Point { x: 30.0, y: 36.0 }, 12.0, ACCENT);
-    bar(c, "TEZZERA", 50.0, 28.0, TEXT_HI, 7.5, 14.0);
+    c.draw_text("TEZZERA", Point { x: 50.0, y: 28.0 }, TEXT_HI, font, 14.0);
 
     // Nav items
     let items = [
@@ -142,15 +140,15 @@ fn sidebar(c: &mut SkiaCanvas) {
             c.fill_rect(Rect { origin: Point { x: 0.0, y: iy - 2.0 }, size: Size { width: sw, height: 28.0 } }, Color::rgba(100,160,255,20));
             c.fill_rect(Rect { origin: Point { x: 0.0, y: iy - 2.0 }, size: Size { width: 3.0, height: 28.0 } }, ACCENT);
         }
-        bar(c, label, 22.0, iy + 6.0, *color, 6.5, 12.0);
+        c.draw_text(label, Point { x: 22.0, y: iy + 6.0 }, *color, font, 12.0);
     }
 
     // Bottom user chip
     let uy = H as f32 - 60.0;
     c.fill_rect(Rect { origin: Point { x: 10.0, y: uy }, size: Size { width: sw - 20.0, height: 44.0 } }, Color::rgba(255,255,255,8));
     c.fill_circle(Point { x: 28.0, y: uy + 22.0 }, 14.0, ACCENT);
-    bar(c, "Admin User", 48.0, uy + 10.0, TEXT_HI, 6.0, 11.0);
-    bar(c, "admin@tezzera.io", 48.0, uy + 25.0, TEXT_LO, 5.5, 9.0);
+    c.draw_text("Admin User",       Point { x: 48.0, y: uy + 10.0 }, TEXT_HI, font, 11.0);
+    c.draw_text("admin@tezzera.io", Point { x: 48.0, y: uy + 25.0 }, TEXT_LO, font,  9.0);
 }
 
 fn main() {
@@ -169,19 +167,21 @@ fn main() {
     let rv = revenue.get();
     let er = error_rate.get();
 
+    let font = FontCache::system_mono().expect("no system font");
+
     let mut c = SkiaCanvas::new(W, H);
     c.clear(BG);
 
     // Sidebar
-    sidebar(&mut c);
+    sidebar(&mut c, &font);
 
     let cx = 190.0_f32; // content x
     let cw = W as f32 - cx - 10.0;
 
     // ── Top header bar ───────────────────────────────────────────────────────
     c.fill_rect(Rect { origin: Point { x: cx, y: 0.0 }, size: Size { width: cw, height: 48.0 } }, HEADER_BG);
-    bar(&mut c, "Overview", cx + 12.0, 16.0, TEXT_HI, 7.5, 14.0);
-    bar(&mut c, "Last 30 days  v", W as f32 - 130.0, 18.0, TEXT_LO, 6.0, 11.0);
+    c.draw_text("Overview",       Point { x: cx + 12.0,           y: 16.0 }, TEXT_HI, &font, 14.0);
+    c.draw_text("Last 30 days  v", Point { x: W as f32 - 130.0,   y: 18.0 }, TEXT_LO, &font, 11.0);
     c.fill_circle(Point { x: W as f32 - 24.0, y: 24.0 }, 7.0, GREEN); // status dot
 
     // ── Stat tiles ───────────────────────────────────────────────────────────
@@ -202,7 +202,7 @@ fn main() {
     ];
     for (i, (lbl, val, delta, pos, color)) in tiles.iter().enumerate() {
         let p = tile_layout.child_positions[i];
-        stat_tile(&mut c, cx + 8.0 + p.x, 56.0 + p.y, 152.0, 76.0, lbl, val, delta, *pos, *color);
+        stat_tile(&mut c, &font, cx + 8.0 + p.x, 56.0 + p.y, 152.0, 76.0, lbl, val, delta, *pos, *color);
     }
 
     // ── Bar chart (left 60%) + activity feed (right 40%) ────────────────────
@@ -211,8 +211,8 @@ fn main() {
     let chart_w   = cw * 0.60 - 6.0;
     let feed_w    = cw - chart_w - 14.0;
 
-    bar_chart(&mut c, cx + 8.0, section_y, chart_w, section_h);
-    activity_feed(&mut c, cx + 8.0 + chart_w + 6.0, section_y, feed_w, section_h);
+    bar_chart(&mut c, &font, cx + 8.0, section_y, chart_w, section_h);
+    activity_feed(&mut c, &font, cx + 8.0 + chart_w + 6.0, section_y, feed_w, section_h);
 
     let png = c.encode_png().expect("encode png");
     std::fs::write("dashboard.png", png).expect("write png");
