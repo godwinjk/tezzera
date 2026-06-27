@@ -1467,6 +1467,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "tezzera-forms"
+version = "0.1.0"
+dependencies = [
+ "tezzera-state",
+ "tezzera-trace",
+]
+
+[[package]]
 name = "tezzera-hot-reload"
 version = "0.1.0"
 dependencies = [
