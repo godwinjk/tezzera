@@ -1443,6 +1443,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "tezzera-devtools"
+version = "0.1.0"
+dependencies = [
+ "tezzera-core",
+ "tezzera-state",
+ "tezzera-trace",
+]
+
+[[package]]
 name = "tezzera-examples"
 version = "0.1.0"
 dependencies = [
