@@ -12,3 +12,4 @@ tezzera-core   = { path = "../tezzera-core" }
 tezzera-state  = { path = "../tezzera-state" }
 tezzera-layout = { path = "../tezzera-layout" }
 tezzera-render = { path = "../tezzera-render" }
+tezzera-theme  = { path = "../tezzera-theme" }
