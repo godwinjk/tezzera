@@ -8,6 +8,8 @@ members = [
     "tezzera-render",
     "tezzera-widgets",
     "tezzera-cli",
+    "tezzera-examples",
+    "tezzera-platform",
 ]
 resolver = "2"
 

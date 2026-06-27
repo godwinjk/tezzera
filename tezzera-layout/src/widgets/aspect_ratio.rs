@@ -1,8 +1,10 @@
 //! [`AspectRatio`] — constrains a child to a fixed width-to-height ratio.
 
 use tezzera_core::element::{Element, NativeElement};
+#[cfg(debug_assertions)]
 use tezzera_core::render_object::AxisBound;
 use tezzera_core::types::Size;
+#[cfg(debug_assertions)]
 use tezzera_trace::{
     event::{ComponentId, TezzeraTrace, TraceConstraints},
     trace,
@@ -41,8 +43,10 @@ impl AspectRatio {
     ///
     /// Emits [`TezzeraTrace::LayoutStart`] and [`TezzeraTrace::LayoutEnd`] events.
     pub fn layout(&self, constraints: Constraints) -> Size {
+        #[cfg(debug_assertions)]
         let start = std::time::Instant::now();
 
+        #[cfg(debug_assertions)]
         trace!(TezzeraTrace::LayoutStart {
             component: ComponentId(0),
             constraints: TraceConstraints {
@@ -76,6 +80,7 @@ impl AspectRatio {
             constraints.constrain(Size { width, height })
         };
 
+        #[cfg(debug_assertions)]
         trace!(TezzeraTrace::LayoutEnd {
             component: ComponentId(0),
             size,

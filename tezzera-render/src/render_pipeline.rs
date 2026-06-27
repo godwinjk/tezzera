@@ -1,5 +1,6 @@
 use std::time::Instant;
 
+#[cfg(debug_assertions)]
 use tezzera_trace::{
     event::{TezzeraTrace},
     trace,
@@ -60,10 +61,12 @@ impl RenderPipeline {
     where
         F: FnOnce(&mut SkiaCanvas),
     {
+        #[cfg(debug_assertions)]
         let frame = self.frame_counter;
         self.frame_counter += 1;
 
         let start = Instant::now();
+        #[cfg(debug_assertions)]
         trace!(TezzeraTrace::FrameStart {
             frame,
             timestamp: start,
@@ -85,6 +88,7 @@ impl RenderPipeline {
         let duration = start.elapsed();
         let dropped = duration.as_secs_f64() * 1000.0 > self.frame_budget_ms;
 
+        #[cfg(debug_assertions)]
         trace!(TezzeraTrace::FrameEnd {
             frame,
             duration,

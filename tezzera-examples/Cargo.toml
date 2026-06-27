@@ -1,0 +1,29 @@
+[package]
+name = "tezzera-examples"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "photo_gallery"
+path = "src/bin/photo_gallery.rs"
+
+[[bin]]
+name = "profile_card"
+path = "src/bin/profile_card.rs"
+
+[[bin]]
+name = "dashboard"
+path = "src/bin/dashboard.rs"
+
+[[bin]]
+name = "counter_window"
+path = "src/bin/counter_window.rs"
+
+[dependencies]
+tezzera-core     = { path = "../tezzera-core" }
+tezzera-layout   = { path = "../tezzera-layout" }
+tezzera-render   = { path = "../tezzera-render" }
+tezzera-state    = { path = "../tezzera-state" }
+tezzera-platform = { path = "../tezzera-platform" }

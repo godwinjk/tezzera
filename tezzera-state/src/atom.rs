@@ -101,6 +101,7 @@ impl<T: 'static> Atom<T> {
     {
         let guard = self.inner.lock().unwrap_or_else(|e| e.into_inner());
         let val = guard.value.clone();
+        #[cfg(debug_assertions)]
         let atom_id = guard.id;
         drop(guard);
 

@@ -1,0 +1,13 @@
+[package]
+name = "tezzera-platform"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+tezzera-core   = { path = "../tezzera-core" }
+tezzera-render = { path = "../tezzera-render" }
+tezzera-trace  = { path = "../tezzera-trace" }
+winit          = "0.30"
+softbuffer     = "0.4"

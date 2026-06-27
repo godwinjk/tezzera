@@ -7,11 +7,13 @@
 
 pub mod canvas;
 pub mod dirty_region;
+pub mod font;
 pub mod image;
 pub mod layer;
 pub mod render_pipeline;
 
 pub use canvas::{Color, SkiaCanvas};
+pub use font::FontCache;
 pub use dirty_region::DirtyRegionTracker;
 pub use image::{CachePolicy, ImageFit, ImageHandle};
 pub use layer::{layer_index, Layer, LayerCompositor};

@@ -2,8 +2,10 @@
 
 use tezzera_core::child_container::ChildContainer;
 use tezzera_core::element::{Element, NativeElement};
+#[cfg(debug_assertions)]
 use tezzera_core::render_object::AxisBound;
 use tezzera_core::types::{Point, Size};
+#[cfg(debug_assertions)]
 use tezzera_trace::{
     event::{ComponentId, TezzeraTrace, TraceConstraints},
     trace,
@@ -53,8 +55,10 @@ impl Wrap {
     ///
     /// Emits [`TezzeraTrace::LayoutStart`] and [`TezzeraTrace::LayoutEnd`] events.
     pub fn layout(&self, constraints: Constraints, child_sizes: &[Size]) -> LayoutResult {
+        #[cfg(debug_assertions)]
         let start = std::time::Instant::now();
 
+        #[cfg(debug_assertions)]
         trace!(TezzeraTrace::LayoutStart {
             component: ComponentId(0),
             constraints: TraceConstraints {
@@ -126,6 +130,7 @@ impl Wrap {
             child_positions: positions,
         };
 
+        #[cfg(debug_assertions)]
         trace!(TezzeraTrace::LayoutEnd {
             component: ComponentId(0),
             size: result.size,
