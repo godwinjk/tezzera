@@ -1,0 +1,19 @@
+[workspace]
+members = [
+    "tezzera-macros",
+    "tezzera-trace",
+    "tezzera-core",
+    "tezzera-state",
+    "tezzera-layout",
+    "tezzera-render",
+    "tezzera-widgets",
+    "tezzera-cli",
+]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = ["TEZZERA Contributors"]
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/tezzera-ui/tezzera"
