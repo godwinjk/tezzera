@@ -21,9 +21,14 @@ path = "src/bin/dashboard.rs"
 name = "counter_window"
 path = "src/bin/counter_window.rs"
 
+[[bin]]
+name = "animated_counter"
+path = "src/bin/animated_counter.rs"
+
 [dependencies]
 tezzera-core     = { path = "../tezzera-core" }
 tezzera-layout   = { path = "../tezzera-layout" }
 tezzera-render   = { path = "../tezzera-render" }
 tezzera-state    = { path = "../tezzera-state" }
 tezzera-platform = { path = "../tezzera-platform" }
+tezzera-animate  = { path = "../tezzera-animate" }
