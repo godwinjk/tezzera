@@ -1,6 +1,6 @@
 mod commands;
 
-use commands::{build, dev};
+use commands::{build, dev, new};
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
@@ -30,6 +30,20 @@ fn main() {
                 }
             }
         }
+        Some("new") => {
+            match new::NewOptions::from_args(rest) {
+                Ok(opts) => {
+                    if let Err(e) = new::run(opts) {
+                        eprintln!("error: {}", e);
+                        std::process::exit(1);
+                    }
+                }
+                Err(e) => {
+                    eprintln!("error: {}", e);
+                    std::process::exit(1);
+                }
+            }
+        }
         Some("help") | Some("--help") | Some("-h") | None => {
             print_usage();
         }
@@ -49,6 +63,7 @@ fn print_usage() {
     println!("  tzr <COMMAND> [OPTIONS]");
     println!();
     println!("COMMANDS:");
+    println!("  new <name>        Scaffold a new TEZZERA app project");
     println!("  dev               Start dev server with terminal trace output");
     println!("  build             Build the app for a target platform");
     println!("  help              Print this message");
