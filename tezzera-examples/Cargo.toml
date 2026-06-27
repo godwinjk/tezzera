@@ -25,6 +25,10 @@ path = "src/bin/counter_window.rs"
 name = "animated_counter"
 path = "src/bin/animated_counter.rs"
 
+[[bin]]
+name = "phase2_demo"
+path = "src/bin/phase2_demo.rs"
+
 [dependencies]
 tezzera-core     = { path = "../tezzera-core" }
 tezzera-layout   = { path = "../tezzera-layout" }
@@ -32,3 +36,6 @@ tezzera-render   = { path = "../tezzera-render" }
 tezzera-state    = { path = "../tezzera-state" }
 tezzera-platform = { path = "../tezzera-platform" }
 tezzera-animate  = { path = "../tezzera-animate" }
+tezzera-theme    = { path = "../tezzera-theme" }
+tezzera-scroll   = { path = "../tezzera-scroll" }
+tezzera-widgets  = { path = "../tezzera-widgets" }

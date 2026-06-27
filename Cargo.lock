@@ -1439,7 +1439,10 @@ dependencies = [
  "tezzera-layout",
  "tezzera-platform",
  "tezzera-render",
+ "tezzera-scroll",
  "tezzera-state",
+ "tezzera-theme",
+ "tezzera-widgets",
 ]
 
 [[package]]
