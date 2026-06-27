@@ -29,6 +29,14 @@ path = "src/bin/animated_counter.rs"
 name = "phase2_demo"
 path = "src/bin/phase2_demo.rs"
 
+[[bin]]
+name = "nav_demo"
+path = "src/bin/nav_demo.rs"
+
+[[bin]]
+name = "phase4_demo"
+path = "src/bin/phase4_demo.rs"
+
 [dependencies]
 tezzera-core     = { path = "../tezzera-core" }
 tezzera-layout   = { path = "../tezzera-layout" }
@@ -39,3 +47,5 @@ tezzera-animate  = { path = "../tezzera-animate" }
 tezzera-theme    = { path = "../tezzera-theme" }
 tezzera-scroll   = { path = "../tezzera-scroll" }
 tezzera-widgets  = { path = "../tezzera-widgets" }
+tezzera-nav      = { path = "../tezzera-nav" }
+tezzera-forms    = { path = "../tezzera-forms" }
