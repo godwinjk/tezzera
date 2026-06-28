@@ -1500,6 +1500,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "tezzera-i18n"
+version = "0.1.0"
+dependencies = [
+ "tezzera-state",
+ "tezzera-trace",
+]
+
+[[package]]
 name = "tezzera-layout"
 version = "0.1.0"
 dependencies = [
