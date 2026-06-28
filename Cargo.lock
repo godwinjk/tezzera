@@ -1535,6 +1535,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "tezzera-net"
+version = "0.1.0"
+dependencies = [
+ "tezzera-core",
+ "tezzera-trace",
+]
+
+[[package]]
 name = "tezzera-platform"
 version = "0.1.0"
 dependencies = [

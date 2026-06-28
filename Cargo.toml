@@ -20,6 +20,7 @@ members = [
     "tezzera-forms",
     "tezzera-a11y",
     "tezzera-gesture",
+    "tezzera-net",
 ]
 resolver = "2"
 
