@@ -1521,6 +1521,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "tezzera-ime"
+version = "0.1.0"
+dependencies = [
+ "tezzera-trace",
+]
+
+[[package]]
 name = "tezzera-layout"
 version = "0.1.0"
 dependencies = [

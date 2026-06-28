@@ -26,6 +26,7 @@ members = [
     "tezzera-i18n",
     "tezzera-clipboard",
     "tezzera-ws",
+    "tezzera-ime",
 ]
 resolver = "2"
 
