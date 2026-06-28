@@ -1,6 +1,6 @@
 mod commands;
 
-use commands::{build, dev, new};
+use commands::{analyze, build, dev, new, snapshot};
 use commands::package;
 use commands::workspace;
 
@@ -100,6 +100,43 @@ fn main() {
             println!("{}", result.summary());
             std::process::exit(result.exit_code);
         }
+        Some("analyze") => {
+            match analyze::AnalyzeOptions::from_args(rest) {
+                Ok(opts) => {
+                    match analyze::run_analyze(&opts) {
+                        Ok(report) => {
+                            println!("{}", report.summary());
+                            if opts.verbose {
+                                println!("  Members: {}", report.member_list());
+                            }
+                        }
+                        Err(e) => {
+                            eprintln!("error: {}", e);
+                            std::process::exit(1);
+                        }
+                    }
+                }
+                Err(e) => {
+                    eprintln!("error: {}", e);
+                    std::process::exit(1);
+                }
+            }
+        }
+        Some("snapshot") => {
+            match snapshot::SnapshotOptions::from_args(rest) {
+                Ok(opts) => {
+                    let result = snapshot::run_snapshot(&opts);
+                    print!("{}", result.stdout);
+                    eprint!("{}", result.stderr);
+                    println!("{}", result.summary());
+                    std::process::exit(result.exit_code);
+                }
+                Err(e) => {
+                    eprintln!("error: {}", e);
+                    std::process::exit(1);
+                }
+            }
+        }
         Some("help") | Some("--help") | Some("-h") | None => {
             print_usage();
         }
@@ -128,6 +165,8 @@ fn print_usage() {
     println!("  test [filter]     Run `cargo test --workspace` (optional test filter)");
     println!("  lint              Run `cargo clippy --workspace -- -D warnings`");
     println!("  fmt               Run `cargo fmt --workspace --check`");
+    println!("  analyze           Workspace health: crate count, member list");
+    println!("  snapshot          Run an example binary and save its PNG output");
     println!("  help              Print this message");
     println!();
     println!("OPTIONS (dev):");

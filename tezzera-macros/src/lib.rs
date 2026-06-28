@@ -1,6 +1,7 @@
 extern crate proc_macro;
 
 mod component;
+mod state;
 mod view;
 
 use proc_macro::TokenStream;
@@ -23,6 +24,21 @@ use proc_macro::TokenStream;
 #[proc_macro_attribute]
 pub fn component(attr: TokenStream, item: TokenStream) -> TokenStream {
     component::expand(attr.into(), item.into()).into()
+}
+
+/// Transforms a field declaration into an `Atom<T>` binding.
+///
+/// # Example
+/// ```rust,ignore
+/// #[state]
+/// pub count: i32 = 0;
+///
+/// // Expands to:
+/// pub count: tezzera_state::Atom<i32> = tezzera_state::Atom::new(0);
+/// ```
+#[proc_macro_attribute]
+pub fn state(attr: TokenStream, item: TokenStream) -> TokenStream {
+    state::expand(attr.into(), item.into()).into()
 }
 
 /// Declarative macro for building element trees.
@@ -117,6 +133,58 @@ mod tests {
             out.contains("compile_error"),
             "expected compile_error, got: {out}"
         );
+    }
+
+    // -- #[state] ------------------------------------------------------------
+
+    #[test]
+    fn state_expands_to_atom() {
+        let attr = TokenStream::new();
+        let item = quote! { pub count: i32 = 0 };
+        let out = crate::state::expand(attr, item).to_string();
+        assert!(out.contains("Atom"), "Atom missing: {out}");
+        assert!(out.contains("count"), "field name missing: {out}");
+    }
+
+    #[test]
+    fn state_preserves_field_name() {
+        let attr = TokenStream::new();
+        let item = quote! { pub username: String = String::new() };
+        let out = crate::state::expand(attr, item).to_string();
+        assert!(out.contains("username"), "{out}");
+    }
+
+    #[test]
+    fn state_preserves_type() {
+        let attr = TokenStream::new();
+        let item = quote! { value: f32 = 0.0 };
+        let out = crate::state::expand(attr, item).to_string();
+        assert!(out.contains("f32"), "type missing: {out}");
+    }
+
+    #[test]
+    fn state_preserves_default() {
+        let attr = TokenStream::new();
+        let item = quote! { count: i32 = 42 };
+        let out = crate::state::expand(attr, item).to_string();
+        assert!(out.contains("42"), "default expr missing: {out}");
+    }
+
+    #[test]
+    fn state_invalid_input_gives_compile_error() {
+        let attr = TokenStream::new();
+        let item = quote! { this is not valid };
+        let out = crate::state::expand(attr, item).to_string();
+        assert!(out.contains("compile_error"), "expected error: {out}");
+    }
+
+    #[test]
+    fn state_wraps_in_atom_new() {
+        let attr = TokenStream::new();
+        let item = quote! { active: bool = false };
+        let out = crate::state::expand(attr, item).to_string();
+        assert!(out.contains("Atom"), "{out}");
+        assert!(out.contains("false"), "{out}");
     }
 
     // -- view! ---------------------------------------------------------------
