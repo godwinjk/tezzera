@@ -23,10 +23,12 @@ members = [
     "tezzera-gesture",
     "tezzera-net",
     "tezzera-text",
+    "tezzera-bidi",
     "tezzera-i18n",
     "tezzera-clipboard",
     "tezzera-ws",
     "tezzera-ime",
+    "tezzera-media",
 ]
 resolver = "2"
 

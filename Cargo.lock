@@ -1433,6 +1433,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "tezzera-bidi"
+version = "0.1.0"
+dependencies = [
+ "tezzera-trace",
+]
+
+[[package]]
 name = "tezzera-cli"
 version = "0.1.0"
 dependencies = [
@@ -1542,6 +1549,13 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
+]
+
+[[package]]
+name = "tezzera-media"
+version = "0.1.0"
+dependencies = [
+ "tezzera-trace",
 ]
 
 [[package]]
