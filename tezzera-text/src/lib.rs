@@ -17,11 +17,13 @@
 //! ```
 
 pub mod cursor;
+pub mod direction;
 pub mod layout;
 pub mod rich_text;
 pub mod span;
 
-pub use cursor::TextCursor;
+pub use cursor::{TextCursor, TextSelection};
+pub use direction::{detect_direction, reverse_words, TextDirection};
 pub use layout::{word_wrap, TextLayout, TextLine};
 pub use rich_text::RichText;
 pub use span::{TextSpan, TextStyle};

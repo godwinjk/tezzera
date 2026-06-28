@@ -1,3 +1,4 @@
+use crate::direction::TextDirection;
 use crate::span::TextSpan;
 #[cfg(test)]
 use crate::span::TextStyle;
@@ -22,6 +23,14 @@ impl TextLine {
         self.spans.push(span);
     }
 
+    /// Like `push_span` but uses the caller-supplied `width` instead of the
+    /// heuristic, so `layout_with_measure` can track accurate widths.
+    pub fn push_span_with_width(&mut self, span: TextSpan, width: f32) {
+        self.height = self.height.max(span.style.font_size * 1.3);
+        self.width += width;
+        self.spans.push(span);
+    }
+
     pub fn is_empty(&self) -> bool { self.spans.is_empty() }
 
     pub fn plain_text(&self) -> String {
@@ -36,6 +45,7 @@ pub struct TextLayout {
     pub lines: Vec<TextLine>,
     pub max_width: f32,
     pub line_spacing: f32,
+    pub direction: TextDirection,
 }
 
 impl TextLayout {
@@ -74,7 +84,19 @@ impl TextLayout {
             lines.push(current);
         }
 
-        Self { lines, max_width, line_spacing: 1.4 }
+        Self { lines, max_width, line_spacing: 1.4, direction: TextDirection::Ltr }
+    }
+
+    /// Lay out spans for RTL display.
+    ///
+    /// Calls `layout` then reverses each line's span order for visual RTL reordering.
+    pub fn layout_rtl(spans: &[TextSpan], max_width: f32) -> Self {
+        let mut layout = Self::layout(spans, max_width);
+        for line in &mut layout.lines {
+            line.spans.reverse();
+        }
+        layout.direction = TextDirection::Rtl;
+        layout
     }
 
     /// Total height of all lines.

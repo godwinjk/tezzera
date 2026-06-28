@@ -1,4 +1,5 @@
 use tezzera_theme::Color;
+use crate::direction::TextDirection;
 
 /// Style flags for a text span.
 #[derive(Debug, Clone, PartialEq)]
@@ -8,11 +9,12 @@ pub struct TextStyle {
     pub bold: bool,
     pub italic: bool,
     pub underline: bool,
+    pub direction: TextDirection,
 }
 
 impl TextStyle {
     pub fn new(font_size: f32, color: Color) -> Self {
-        Self { font_size, color, bold: false, italic: false, underline: false }
+        Self { font_size, color, bold: false, italic: false, underline: false, direction: TextDirection::Auto }
     }
     pub fn bold(mut self) -> Self { self.bold = true; self }
     pub fn italic(mut self) -> Self { self.italic = true; self }
