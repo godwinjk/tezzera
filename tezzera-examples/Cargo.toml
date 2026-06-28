@@ -53,6 +53,10 @@ path = "src/bin/phase7_demo.rs"
 name = "phase8_demo"
 path = "src/bin/phase8_demo.rs"
 
+[[bin]]
+name = "phase9_demo"
+path = "src/bin/phase9_demo.rs"
+
 [dependencies]
 tezzera-core     = { path = "../tezzera-core" }
 tezzera-layout   = { path = "../tezzera-layout" }
@@ -76,3 +80,5 @@ tezzera-renderer  = { path = "../tezzera-renderer" }
 tezzera-ime       = { path = "../tezzera-ime" }
 tezzera-bidi      = { path = "../tezzera-bidi" }
 tezzera-media     = { path = "../tezzera-media" }
+tezzera-shaping   = { path = "../tezzera-shaping" }
+tezzera-style     = { path = "../tezzera-style" }
