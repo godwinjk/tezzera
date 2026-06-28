@@ -1,12 +1,14 @@
 #[derive(Debug, Clone)]
 pub enum InputEvent {
-    MouseMove   { x: f32, y: f32 },
-    MouseDown   { x: f32, y: f32, button: MouseButton },
-    MouseUp     { x: f32, y: f32, button: MouseButton },
-    KeyDown     { key: Key },
-    KeyUp       { key: Key },
-    Text        { character: char },
+    MouseMove     { x: f32, y: f32 },
+    MouseDown     { x: f32, y: f32, button: MouseButton },
+    MouseUp       { x: f32, y: f32, button: MouseButton },
+    KeyDown       { key: Key },
+    KeyUp         { key: Key },
+    Text          { character: char },
     WindowResized { width: u32, height: u32 },
+    /// Mouse scroll wheel. `delta_y` < 0 = scroll up, > 0 = scroll down.
+    Scroll        { x: f32, y: f32, delta_y: f32 },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
