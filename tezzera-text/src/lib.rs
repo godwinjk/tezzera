@@ -1,0 +1,27 @@
+//! Rich text layout for TEZZERA.
+//!
+//! Provides styled text spans, paragraph layout with word wrapping,
+//! and a text cursor for editable fields.
+//!
+//! # Example
+//! ```rust,ignore
+//! use tezzera_text::{RichText, TextStyle, TextLayout};
+//! use tezzera_theme::Color;
+//!
+//! let rt = RichText::new()
+//!     .text("Hello ", 16.0, Color::WHITE)
+//!     .bold("world", 16.0, Color::from_hex(0x6750A4));
+//!
+//! let layout = TextLayout::layout(&rt.spans, 300.0);
+//! // layout.render(&mut canvas, &font, 20.0, 40.0);
+//! ```
+
+pub mod cursor;
+pub mod layout;
+pub mod rich_text;
+pub mod span;
+
+pub use cursor::TextCursor;
+pub use layout::{word_wrap, TextLayout, TextLine};
+pub use rich_text::RichText;
+pub use span::{TextSpan, TextStyle};
