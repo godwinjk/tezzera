@@ -1457,7 +1457,9 @@ version = "0.1.0"
 dependencies = [
  "tezzera-animate",
  "tezzera-core",
+ "tezzera-forms",
  "tezzera-layout",
+ "tezzera-nav",
  "tezzera-platform",
  "tezzera-render",
  "tezzera-scroll",
@@ -1504,6 +1506,15 @@ version = "0.1.0"
 dependencies = [
  "tezzera-core",
  "tezzera-state",
+ "tezzera-trace",
+]
+
+[[package]]
+name = "tezzera-nav-anim"
+version = "0.1.0"
+dependencies = [
+ "tezzera-animate",
+ "tezzera-nav",
  "tezzera-trace",
 ]
 
@@ -1574,6 +1585,7 @@ dependencies = [
  "tezzera-state",
  "tezzera-theme",
  "tezzera-trace",
+ "tiny-skia",
 ]
 
 [[package]]

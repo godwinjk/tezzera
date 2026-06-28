@@ -14,6 +14,7 @@ members = [
     "tezzera-animate",
     "tezzera-scroll",
     "tezzera-nav",
+    "tezzera-nav-anim",
     "tezzera-hot-reload",
     "tezzera-devtools",
     "tezzera-forms",
