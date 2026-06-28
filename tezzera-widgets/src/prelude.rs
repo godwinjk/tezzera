@@ -9,6 +9,8 @@ pub use crate::center::Center;
 pub use crate::checkbox::{CheckState, Checkbox};
 pub use crate::chip::Chip;
 pub use crate::divider::{Divider, DividerDirection};
+pub use crate::image::{ImageCache, ImageFit, ImageSource, ImageWidget};
+pub use crate::overlay::{Dialog, Modal, Toast, ToastQueue};
 pub use crate::padding::{EdgeInsets, Padding};
 pub use crate::progress_bar::ProgressBar;
 pub use crate::slider::Slider;

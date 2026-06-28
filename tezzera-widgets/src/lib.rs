@@ -30,6 +30,8 @@ pub mod checkbox;
 pub mod chip;
 pub mod counter_app;
 pub mod divider;
+pub mod image;
+pub mod overlay;
 pub mod padding;
 pub mod prelude;
 pub mod progress_bar;
@@ -37,6 +39,9 @@ pub mod slider;
 pub mod switch;
 pub mod text;
 pub mod text_input;
+
+pub use image::{ImageCache, ImageFit, ImageSource, ImageWidget};
+pub use overlay::{Dialog, Modal, Toast, ToastQueue};
 
 pub use prelude::*;
 

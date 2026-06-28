@@ -187,6 +187,14 @@ impl SkiaCanvas {
         self.pixmap.data()
     }
 
+    /// Returns the raw RGBA pixel data as a mutable byte slice.
+    ///
+    /// Callers can write directly into the pixel buffer to blit pre-decoded
+    /// image data or apply custom compositing.
+    pub fn pixels_mut(&mut self) -> &mut [u8] {
+        self.pixmap.data_mut()
+    }
+
     /// Encode the canvas contents as a PNG byte vector, returning `None` on error.
     pub fn encode_png(&self) -> Option<Vec<u8>> {
         self.pixmap.encode_png().ok()

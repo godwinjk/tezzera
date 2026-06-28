@@ -13,3 +13,4 @@ tezzera-state  = { path = "../tezzera-state" }
 tezzera-layout = { path = "../tezzera-layout" }
 tezzera-render = { path = "../tezzera-render" }
 tezzera-theme  = { path = "../tezzera-theme" }
+tiny-skia      = "0.11"
