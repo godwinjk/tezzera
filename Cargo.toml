@@ -1,6 +1,7 @@
 [workspace]
 members = [
     "tezzera-macros",
+    "tezzera-style",
     "tezzera-trace",
     "tezzera-core",
     "tezzera-state",

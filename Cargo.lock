@@ -1651,6 +1651,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "tezzera-style"
+version = "0.1.0"
+dependencies = [
+ "tezzera-core",
+ "tezzera-theme",
+]
+
+[[package]]
 name = "tezzera-text"
 version = "0.1.0"
 dependencies = [
