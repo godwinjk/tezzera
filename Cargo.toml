@@ -23,6 +23,7 @@ members = [
     "tezzera-gesture",
     "tezzera-net",
     "tezzera-text",
+    "tezzera-shaping",
     "tezzera-bidi",
     "tezzera-i18n",
     "tezzera-clipboard",

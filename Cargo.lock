@@ -1634,6 +1634,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "tezzera-shaping"
+version = "0.1.0"
+dependencies = [
+ "tezzera-core",
+ "tezzera-render",
+ "tezzera-text",
+ "tezzera-trace",
+]
+
+[[package]]
 name = "tezzera-state"
 version = "0.1.0"
 dependencies = [
