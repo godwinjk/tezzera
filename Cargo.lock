@@ -1442,6 +1442,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "tezzera-clipboard"
+version = "0.1.0"
+dependencies = [
+ "tezzera-trace",
+]
+
+[[package]]
 name = "tezzera-core"
 version = "0.1.0"
 dependencies = [
@@ -1631,6 +1638,13 @@ dependencies = [
  "tezzera-theme",
  "tezzera-trace",
  "tiny-skia",
+]
+
+[[package]]
+name = "tezzera-ws"
+version = "0.1.0"
+dependencies = [
+ "tezzera-trace",
 ]
 
 [[package]]

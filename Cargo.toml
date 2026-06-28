@@ -23,6 +23,8 @@ members = [
     "tezzera-net",
     "tezzera-text",
     "tezzera-i18n",
+    "tezzera-clipboard",
+    "tezzera-ws",
 ]
 resolver = "2"
 
