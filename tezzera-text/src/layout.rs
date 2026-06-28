@@ -87,6 +87,50 @@ impl TextLayout {
         Self { lines, max_width, line_spacing: 1.4, direction: TextDirection::Ltr }
     }
 
+    /// Lay out spans using a caller-supplied measure function instead of the
+    /// heuristic `estimated_width`.
+    ///
+    /// `measure(text, font_size)` must return the pixel width of `text` at the
+    /// given font size.  Use `tezzera_text::metrics::measure_text` for real
+    /// fontdue metrics or any closure for testing.
+    pub fn layout_with_measure<F>(spans: &[TextSpan], max_width: f32, measure: F) -> Self
+    where
+        F: Fn(&str, f32) -> f32,
+    {
+        let mut lines: Vec<TextLine> = Vec::new();
+        let mut current = TextLine::new();
+
+        for span in spans {
+            let words: Vec<&str> = span.text.split_whitespace().collect();
+            let leading_space = span.text.starts_with(' ');
+            let trailing_space = span.text.ends_with(' ');
+
+            for (i, word) in words.iter().enumerate() {
+                let prefix = if i == 0 && leading_space { " " } else if i > 0 { " " } else { "" };
+                let token = format!("{}{}", prefix, word);
+                let token_w = measure(&token, span.style.font_size);
+                let token_span = TextSpan::new(&token, span.style.clone());
+
+                if !current.is_empty() && current.width + token_w > max_width {
+                    lines.push(std::mem::replace(&mut current, TextLine::new()));
+                }
+                current.push_span_with_width(token_span, token_w);
+            }
+
+            if trailing_space && !words.is_empty() {
+                let sp_w = measure(" ", span.style.font_size);
+                let sp = TextSpan::new(" ", span.style.clone());
+                current.push_span_with_width(sp, sp_w);
+            }
+        }
+
+        if !current.is_empty() {
+            lines.push(current);
+        }
+
+        Self { lines, max_width, line_spacing: 1.4, direction: TextDirection::Ltr }
+    }
+
     /// Lay out spans for RTL display.
     ///
     /// Calls `layout` then reverses each line's span order for visual RTL reordering.
@@ -133,15 +177,19 @@ fn theme_color_to_render(c: ThemeColor) -> Color {
 
 /// Greedy word wrapper — returns wrapped lines for plain text.
 ///
-/// `char_width` is the pixel width of a single character.
-pub fn word_wrap(text: &str, max_width: f32, char_width: f32) -> Vec<String> {
+/// `measure(s)` returns the pixel width of the string `s`.  This lets callers
+/// supply real fontdue metrics, a custom closure, or the simple heuristic.
+pub fn word_wrap<F>(text: &str, max_width: f32, measure: F) -> Vec<String>
+where
+    F: Fn(&str) -> f32,
+{
     let mut lines = Vec::new();
     let mut current = String::new();
     let mut current_w = 0.0_f32;
 
     for word in text.split_whitespace() {
-        let word_w = word.len() as f32 * char_width;
-        let space_w = char_width;
+        let word_w = measure(word);
+        let space_w = measure(" ");
 
         if !current.is_empty() && current_w + space_w + word_w > max_width {
             lines.push(current.trim_end().to_string());
@@ -168,6 +216,15 @@ pub fn word_wrap(text: &str, max_width: f32, char_width: f32) -> Vec<String> {
     lines
 }
 
+/// Convenience wrapper around `word_wrap` using a uniform character width.
+///
+/// This preserves the old two-arg call style and keeps existing tests compiling
+/// without change — just swap `word_wrap(t, w, cw)` to
+/// `word_wrap_simple(t, w, cw)`.
+pub fn word_wrap_simple(text: &str, max_width: f32, char_width: f32) -> Vec<String> {
+    word_wrap(text, max_width, |s| s.len() as f32 * char_width)
+}
+
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
@@ -181,44 +238,41 @@ mod tests {
         TextStyle::new(size, Color::WHITE)
     }
 
-    // ---- word_wrap tests ----
+    // ---- word_wrap tests (via word_wrap_simple convenience wrapper) ----
 
     #[test]
     fn word_wrap_empty_string() {
-        let lines = word_wrap("", 100.0, 8.0);
+        let lines = word_wrap_simple("", 100.0, 8.0);
         assert!(lines.is_empty());
     }
 
     #[test]
     fn word_wrap_single_word_fits() {
         // "Hi" = 2 chars * 8.0 = 16.0 < 100.0
-        let lines = word_wrap("Hi", 100.0, 8.0);
+        let lines = word_wrap_simple("Hi", 100.0, 8.0);
         assert_eq!(lines.len(), 1);
         assert_eq!(lines[0], "Hi");
     }
 
     #[test]
     fn word_wrap_single_word_too_long_kept() {
-        // A very long word that exceeds max_width is kept on its own line.
-        let lines = word_wrap("superlongword", 10.0, 8.0);
+        let lines = word_wrap_simple("superlongword", 10.0, 8.0);
         assert_eq!(lines.len(), 1);
         assert_eq!(lines[0], "superlongword");
     }
 
     #[test]
     fn word_wrap_two_words_fit_on_one_line() {
-        // "Hi" + " " + "yo" = 2+1+2 = 5 chars * 8.0 = 40.0 < 100.0
-        let lines = word_wrap("Hi yo", 100.0, 8.0);
+        // "Hi" + " " + "yo" = 5 chars * 8.0 = 40.0 < 100.0
+        let lines = word_wrap_simple("Hi yo", 100.0, 8.0);
         assert_eq!(lines.len(), 1);
         assert_eq!(lines[0], "Hi yo");
     }
 
     #[test]
     fn word_wrap_two_words_wrap() {
-        // char_width = 8.0, max = 20.0
-        // "Hello" = 5*8 = 40 > 20 → stays on first line (forced)
-        // "world" pushed to next because 40 + 8 + 40 > 20
-        let lines = word_wrap("Hello world", 20.0, 8.0);
+        // char_width = 8.0, max = 20.0 → "Hello" (40px) and "world" on separate lines
+        let lines = word_wrap_simple("Hello world", 20.0, 8.0);
         assert_eq!(lines.len(), 2);
         assert_eq!(lines[0], "Hello");
         assert_eq!(lines[1], "world");
@@ -226,10 +280,29 @@ mod tests {
 
     #[test]
     fn word_wrap_multiple_lines() {
-        // char_width=10, max=50: each word "one"=30, "two"=30, "three"=50 fits alone
-        // "one two" = 30+10+30=70 > 50 → wrap
-        let lines = word_wrap("one two three", 50.0, 10.0);
+        let lines = word_wrap_simple("one two three", 50.0, 10.0);
         assert!(lines.len() >= 2);
+    }
+
+    // ---- word_wrap with closure measure fn ----
+
+    #[test]
+    fn word_wrap_with_measure_fn_empty() {
+        let lines = word_wrap("", 100.0, |s| s.len() as f32 * 8.0);
+        assert!(lines.is_empty());
+    }
+
+    #[test]
+    fn word_wrap_with_measure_fn_single_word() {
+        let lines = word_wrap("hello", 200.0, |s| s.len() as f32 * 8.0);
+        assert_eq!(lines.len(), 1);
+        assert_eq!(lines[0], "hello");
+    }
+
+    #[test]
+    fn word_wrap_with_measure_fn_wraps() {
+        let lines = word_wrap("hello world", 20.0, |s| s.len() as f32 * 8.0);
+        assert_eq!(lines.len(), 2);
     }
 
     // ---- TextLine tests ----
