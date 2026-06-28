@@ -20,6 +20,8 @@ pub enum GestureEvent {
     LongPress { x: f32, y: f32, duration_secs: f32 },
     Swipe { direction: SwipeDirection, velocity: f32, x: f32, y: f32 },
     Drag { dx: f32, dy: f32, x: f32, y: f32, phase: DragPhase },
+    /// Pinch/zoom — scale > 1.0 means zoom in, < 1.0 means zoom out.
+    Pinch { scale: f32, center_x: f32, center_y: f32 },
 }
 
 #[cfg(test)]

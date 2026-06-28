@@ -21,12 +21,14 @@
 
 pub mod drag;
 pub mod event;
+pub mod pinch;
 pub mod recognizer;
 pub mod swipe;
 pub mod tap;
 
 pub use drag::DragRecognizer;
 pub use event::{DragPhase, GestureEvent, SwipeDirection};
+pub use pinch::PinchRecognizer;
 pub use recognizer::GestureRecognizer;
 pub use swipe::SwipeRecognizer;
 pub use tap::TapRecognizer;
