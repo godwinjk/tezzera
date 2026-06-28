@@ -1420,7 +1420,14 @@ dependencies = [
 name = "tezzera-a11y"
 version = "0.1.0"
 dependencies = [
- "tezzera-trace",
+ "tezzera-core",
+]
+
+[[package]]
+name = "tezzera-anim"
+version = "0.1.0"
+dependencies = [
+ "tezzera-theme",
 ]
 
 [[package]]
@@ -1493,7 +1500,9 @@ dependencies = [
  "tezzera-render",
  "tezzera-renderer",
  "tezzera-scroll",
+ "tezzera-shaping",
  "tezzera-state",
+ "tezzera-style",
  "tezzera-text",
  "tezzera-theme",
  "tezzera-widgets",
