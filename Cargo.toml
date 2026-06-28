@@ -18,6 +18,7 @@ members = [
     "tezzera-hot-reload",
     "tezzera-devtools",
     "tezzera-forms",
+    "tezzera-a11y",
 ]
 resolver = "2"
 

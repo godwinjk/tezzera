@@ -1417,6 +1417,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "tezzera-a11y"
+version = "0.1.0"
+dependencies = [
+ "tezzera-trace",
+]
+
+[[package]]
 name = "tezzera-animate"
 version = "0.1.0"
 dependencies = [
