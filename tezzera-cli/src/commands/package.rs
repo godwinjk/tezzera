@@ -111,8 +111,8 @@ fn read_cargo_field(field: &str) -> Option<String> {
     let content = fs::read_to_string("Cargo.toml").ok()?;
     for line in content.lines() {
         let line = line.trim();
-        if line.starts_with(field) && line.contains('=') {
-            let val = line.splitn(2, '=').nth(1)?
+        if line.starts_with(field) {
+            let val = line.split_once('=')?.1
                 .trim()
                 .trim_matches('"')
                 .to_string();
@@ -153,7 +153,7 @@ fn bundle_macos(name: &str, version: &str, out_dir: &str) -> Result<(), String> 
         .map_err(|e| format!("cannot create Resources dir: {}", e))?;
 
     // Copy binary
-    let bin_name = name.to_lowercase().replace(' ', "_").replace('-', "_");
+    let bin_name = name.to_lowercase().replace([' ', '-'], "_");
     let src_bin = format!("target/release/{}", bin_name);
     let dst_bin = format!("{}/{}", macos_dir, name);
     fs::copy(&src_bin, &dst_bin)
@@ -211,7 +211,7 @@ fn bundle_macos(name: &str, version: &str, out_dir: &str) -> Result<(), String> 
 fn bundle_linux(name: &str, version: &str, out_dir: &str) -> Result<(), String> {
     use std::os::unix::fs::PermissionsExt;
 
-    let bin_name = name.to_lowercase().replace(' ', "_").replace('-', "_");
+    let bin_name = name.to_lowercase().replace([' ', '-'], "_");
     let src_bin = format!("target/release/{}", bin_name);
 
     // 1. Copy standalone binary
@@ -274,7 +274,7 @@ fn bundle_linux(name: &str, version: &str, out_dir: &str) -> Result<(), String> 
 
 #[cfg(target_os = "windows")]
 fn bundle_windows(name: &str, version: &str, out_dir: &str) -> Result<(), String> {
-    let bin_name = name.to_lowercase().replace(' ', "_").replace('-', "_");
+    let bin_name = name.to_lowercase().replace([' ', '-'], "_");
     let src_bin = format!("target/release/{}.exe", bin_name);
     let dst_bin = format!("{}\\{}-{}.exe", out_dir, bin_name, version);
 

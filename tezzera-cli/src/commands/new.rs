@@ -52,8 +52,7 @@ impl NewOptions {
         let mut i = 1;
         while i < args.len() {
             let arg = &args[i];
-            if arg.starts_with("--template=") {
-                let val = &arg["--template=".len()..];
+            if let Some(val) = arg.strip_prefix("--template=") {
                 template = Template::from_str(val)?;
             } else if arg == "--template" {
                 i += 1;
@@ -141,7 +140,7 @@ fn main_rs(name: &str) -> String {
     let title = name.to_uppercase();
     let title_len = title.len();
     format!(r#"use tezzera_core::types::{{Point, Rect, Size}};
-use tezzera_platform::{{InputEvent, MouseButton, TezzeraApp}};
+use tezzera_platform::{{InputEvent, MouseButton, App}};
 use tezzera_render::{{Color, FontCache, SkiaCanvas}};
 use tezzera_state::use_atom;
 
@@ -158,7 +157,7 @@ fn main() {{
     let mut mx = 0.0_f32;
     let mut my = 0.0_f32;
 
-    TezzeraApp::new()
+    App::new()
         .title("{title} — TEZZERA")
         .size(W, H)
         .run(move |canvas: &mut SkiaCanvas, events: &[InputEvent]| {{
@@ -208,7 +207,7 @@ fn main() {{
 fn nav_app_main_rs(name: &str) -> String {
     let title = name.to_uppercase();
     format!(r#"use tezzera_core::types::{{Point, Rect, Size}};
-use tezzera_platform::{{InputEvent, Key, MouseButton, TezzeraApp}};
+use tezzera_platform::{{InputEvent, Key, MouseButton, App}};
 use tezzera_render::{{Color, FontCache, SkiaCanvas}};
 use tezzera_state::use_atom;
 use tezzera_nav::{{Navigator, Route}};
@@ -238,7 +237,7 @@ fn main() {{
     let mx = use_atom(0.0_f32);
     let my = use_atom(0.0_f32);
 
-    TezzeraApp::new()
+    App::new()
         .title("{title} — TEZZERA")
         .size(W, H)
         .run(move |canvas, events| {{
@@ -298,7 +297,7 @@ fn main() {{
 fn form_app_main_rs(name: &str) -> String {
     let title = name.to_uppercase();
     format!(r#"use tezzera_core::types::{{Point, Rect, Size}};
-use tezzera_platform::{{InputEvent, Key, MouseButton, TezzeraApp}};
+use tezzera_platform::{{InputEvent, Key, MouseButton, App}};
 use tezzera_render::{{Color, FontCache, SkiaCanvas}};
 use tezzera_state::use_atom;
 
@@ -321,7 +320,7 @@ fn main() {{
     let mx = use_atom(0.0_f32);
     let my = use_atom(0.0_f32);
 
-    TezzeraApp::new()
+    App::new()
         .title("{title} — Form App")
         .size(W, H)
         .run(move |canvas, events| {{
@@ -395,7 +394,7 @@ fn main() {{
 fn dashboard_main_rs(name: &str) -> String {
     let title = name.to_uppercase();
     format!(r#"use tezzera_core::types::{{Point, Rect, Size}};
-use tezzera_platform::{{InputEvent, TezzeraApp}};
+use tezzera_platform::{{InputEvent, App}};
 use tezzera_render::{{Color, FontCache, SkiaCanvas}};
 
 const W: u32 = 800;
@@ -425,7 +424,7 @@ fn main() {{
         Metric {{ label: "Error Rate",     value: "0.12%",   color: Color::rgb(207, 102, 121) }},
     ];
 
-    TezzeraApp::new()
+    App::new()
         .title("{title} — Dashboard")
         .size(W, H)
         .run(move |canvas, _events| {{

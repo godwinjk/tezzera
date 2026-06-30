@@ -193,7 +193,7 @@ fn extract_first_bin_name(toml: &str) -> Option<String> {
         let t = line.trim();
         if t == "[[bin]]" { in_bin = true; continue; }
         if in_bin && t.starts_with("name") {
-            if let Some(val) = t.splitn(2, '=').nth(1) {
+            if let Some((_, val)) = t.split_once('=') {
                 let name = val.trim().trim_matches('"').trim_matches('\'').to_string();
                 if !name.is_empty() { return Some(name); }
             }

@@ -63,7 +63,7 @@ pub fn parse_members(toml: &str) -> Vec<String> {
             let s = s.trim().trim_matches('"').trim_matches('\'').trim();
             if s.is_empty() { return None; }
             // Extract basename from path like "tezzera-core" or "../tezzera-core"
-            Some(s.trim_start_matches("../").split('/').last().unwrap_or(s).to_string())
+            Some(s.trim_start_matches("../").split('/').next_back().unwrap_or(s).to_string())
         })
         .collect()
 }
@@ -89,7 +89,7 @@ fn extract_workspace_name(toml: &str) -> Option<String> {
     for line in toml.lines() {
         let line = line.trim();
         if line.starts_with("name") && line.contains('=') {
-            let val = line.splitn(2, '=').nth(1)?
+            let val = line.split_once('=')?.1
                 .trim()
                 .trim_matches('"')
                 .to_string();
