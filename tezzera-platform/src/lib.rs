@@ -7,5 +7,5 @@ pub mod web;
 #[cfg(target_arch = "wasm32")]
 pub use web::web_app::run_web;
 
-pub use app::{TezzeraApp, AppConfig};
+pub use app::PlatformWindow;
 pub use event::{InputEvent, MouseButton, Key};
