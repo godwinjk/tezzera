@@ -5,6 +5,8 @@
 
   <p><em>Fast by nature. Beautiful by design.</em></p>
 
+  <p><strong>The UI framework Rust deserved from day one.</strong></p>
+
   <br/>
 
   ![Status](https://img.shields.io/badge/status-work%20in%20progress-orange)
@@ -15,17 +17,39 @@
 
 ---
 
-> **Work in Progress** — this framework is under active development. APIs are unstable, things will break, and large parts are still being built. Not ready for production use.
+> **Work in Progress** — Tezzera is under active development. APIs are unstable, and large parts are still being built. Not ready for production use — but what's here already runs fast.
 
 ---
 
 ## What is Tezzera?
 
-Tezzera is a declarative UI framework written in pure Rust. The name comes from *tessera* — the individual tiles that form a mosaic. Every component is a tessera tile: self-contained, composable, and precise. Assembled together they form the full picture of your application.
+Tezzera is a declarative, reactive UI framework built in pure Rust — from the ground up, without compromise.
 
-Write your UI once in Rust. Run it on desktop, web (WASM), iOS, and Android — targeting 120fps by default.
+The name comes from *tessera* — the individual tiles that form a mosaic. Every component is a tile: self-contained, composable, and pixel-precise. Assembled together they form the complete picture of your application.
 
-Tezzera draws inspiration from Flutter, Jetpack Compose, SwiftUI, and React, tightened up with Rust's type system: no null pointer surprises, no runtime layout panics, no undefined behaviour.
+Write your UI once in Rust. Target desktop, web (WASM), iOS, and Android — with 120fps as the baseline, not the goal.
+
+Tezzera does not patch over existing solutions. It is a clean-room implementation: a purpose-built layout engine, a reactive state model, a software render pipeline — each crate designed to compose perfectly with the others. No hidden overhead. No runtime surprises. No undefined behaviour.
+
+Rust's type system isn't a restriction here — it's a design partner. Null pointer exceptions don't exist in Tezzera. Layout panics don't exist. If it compiles, it runs.
+
+---
+
+## Why Tezzera?
+
+Most UI frameworks in the Rust ecosystem are ports, wrappers, or direct translations of ideas from other languages. Tezzera is none of those things.
+
+It was designed to answer a single question: *what would a UI framework look like if it were built by someone who already knew all the mistakes?*
+
+The answer is a framework that:
+
+- **Never sacrifices performance for convenience** — the render pipeline targets dirty-region compositing at 120fps by default
+- **Never hides cost** — every allocation, every draw call, every state update is explicit and traceable
+- **Never lies about safety** — `#[component]` guarantees lifecycle correctness at compile time
+- **Never forgets developer experience** — the `tzr` CLI, hot reload, and the built-in `TezzeraTrace` event bus exist because debugging UI should not be miserable
+- **Composes all the way down** — from the layout engine to state atoms to the render layer, every abstraction is composable, not opaque
+
+This isn't a prototype. It's a foundation — and it's being built to last.
 
 ---
 
@@ -48,7 +72,9 @@ Tezzera draws inspiration from Flutter, Jetpack Compose, SwiftUI, and React, tig
         tiny-skia · fontdue · winit · softbuffer
 ```
 
-Data flows downward (props); state changes propagate upward through reactive atoms.
+Data flows downward (props). State changes propagate upward through reactive atoms. The render layer only repaints what changed. The trace bus records everything.
+
+A full architecture document is coming. The codebase speaks for itself in the meantime.
 
 ---
 
@@ -65,12 +91,6 @@ cd tezzera
 
 # Build the workspace
 cargo build
-
-# Run the examples
-cargo run -p tezzera-examples --bin counter_window
-cargo run -p tezzera-examples --bin dashboard
-cargo run -p tezzera-examples --bin photo_gallery
-cargo run -p tezzera-examples --bin profile_card
 ```
 
 ### tzr CLI
@@ -79,8 +99,11 @@ cargo run -p tezzera-examples --bin profile_card
 # Install the developer CLI
 cargo install --path tezzera-cli
 
-tzr dev                      # start dev server with hot reload
-tzr build --target desktop   # produce a desktop binary
+tzr new my-app              # scaffold a new Tezzera project
+tzr dev                     # start dev server with hot reload
+tzr build --target desktop  # produce a desktop binary
+tzr analyze                 # static analysis of your component tree
+tzr snapshot                # snapshot test your UI
 ```
 
 ---
@@ -89,7 +112,7 @@ tzr build --target desktop   # produce a desktop binary
 
 | Crate | Description |
 |---|---|
-| `tezzera-macros` | Proc-macros: `#[component]`, `view!{}` |
+| `tezzera-macros` | Proc-macros: `#[component]`, `#[state]`, `view!{}` |
 | `tezzera-trace` | `TezzeraTrace` event bus, ring buffer, subscribers |
 | `tezzera-core` | Component model, element tree, lifecycle hooks |
 | `tezzera-state` | `Atom<T>`, `use_atom()`, `GlobalAtom`, batched updates |
@@ -104,18 +127,34 @@ tzr build --target desktop   # produce a desktop binary
 
 ## Phase 1 Progress
 
-Goal: a working desktop counter app at 60fps with state, layout, and tracing.
+Goal: a working desktop app at 60fps with state, layout, render, tracing, animation, accessibility, and a full developer CLI.
 
 - [x] Reactive state — `Atom<T>`, `use_atom()`, `GlobalAtom`, batched updates
 - [x] Layout engine — Column, Row, Stack, Flex, Grid, Wrap, SizedBox, AspectRatio
 - [x] Render pipeline — tiny-skia, dirty regions, layer compositor
-- [x] Font rendering — fontdue `FontCache` + `draw_text()`
+- [x] Font rendering — fontdue `FontCache` + `draw_text()` with correct glyph placement
 - [x] Lifecycle hooks — `on_mount`, `on_update`, `on_unmount`
 - [x] `ErrorBoundary` with panic catching
 - [x] `TezzeraTrace` event bus with ring buffer
-- [x] `tzr dev` and `tzr build --target desktop`
+- [x] Animation — `Tween`, `AnimationController`, `Timeline`, easing curves
+- [x] Accessibility — semantic tree, roles, focus management
+- [x] Test harness — component-level snapshot and interaction testing
+- [x] Proc-macros — `#[component]`, `#[state]`
+- [x] `tzr` CLI — `new`, `dev`, `build`, `analyze`, `snapshot`
 - [ ] Phase 2 — web/WASM target
 - [ ] Phase 3 — mobile (iOS / Android)
+
+---
+
+## A Note on How This Was Built
+
+> *Coded with AI. Architected by Human.*
+
+Tezzera is built with the assistance of AI — and I say that openly, without apology.
+
+Every line of code in this framework was generated with AI assistance. And every single line was read, understood, validated, and approved by me before it landed. The architecture decisions, the crate boundaries, the API shapes, the performance constraints, the trade-offs — those are mine. The AI is a tool. A fast one. A capable one. But the judgement behind this codebase is human.
+
+This is not a framework vomited out of a prompt. It is a framework designed with intent, built with discipline, and reviewed with care. The AI accelerated the work. The human made sure it was right.
 
 ---
 
@@ -128,8 +167,6 @@ Tezzera is not yet open for general contributions while the foundation is being 
 - **Pull requests** — please open an issue first so we can align on scope and approach; keep PRs small and focused
 
 Architectural decisions that govern the project are recorded in `.steering/DECISIONS.md`. Read that before opening a PR — decisions marked `LOCKED` are not open for debate unless a new decision supersedes them.
-
-A formal contributor guide will be added before the first public release.
 
 ---
 
@@ -144,5 +181,5 @@ This source code is provided for viewing and personal exploration only. You may 
 ---
 
 <div align="center">
-  <sub>Built with Rust. Designed with care.</sub>
+  <sub>Built in Rust. Designed with intent. Reviewed by hand.</sub>
 </div>

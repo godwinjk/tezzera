@@ -550,6 +550,312 @@ Threshold: 0%=pass, <1%=warn, >1%=fail. Configurable per test.
 
 ---
 
+### D054 — VSync Frame Scheduling
+**Status**: LOCKED
+**Decision**: `ControlFlow::Wait` + `EventLoopProxy<FrameRequest>`. `tezzera-state`
+holds a global `OnceLock<Box<dyn Fn() + Send + Sync>>` wakeup fn. `Atom::set()`
+calls `request_frame()` which sets an `AtomicBool` and invokes the wakeup fn.
+Platform registers the proxy at startup. `AboutToWait` + `user_event` both call
+`window.request_redraw()` when the flag is set. App idles at 0% CPU.
+**Affects**: tezzera-state, tezzera-platform
+
+---
+
+### D055 — Key Mechanism
+**Status**: LOCKED
+**Decision**: `Key(u64)` newtype. `impl From<&str>` and `impl From<u64>` via
+FNV hash. `Element::key: Option<Key>`. Reconciler matches keyed siblings by key
+before falling back to position-based matching. No cross-tree key uniqueness
+requirement — keys are local to their parent's child list.
+**Affects**: tezzera-core, tezzera (reconciler)
+
+---
+
+### D056 — LayoutCtx
+**Status**: LOCKED
+**Decision**: `Widget::layout` changes from `(constraints: Constraints) -> Size`
+to `(ctx: &LayoutCtx) -> Size` where `LayoutCtx { constraints, font, theme }`.
+Font access in layout allows accurate glyph-metric-based text measurement.
+`LayoutCtx::with_constraints(c)` creates a child context with tighter constraints.
+**Affects**: tezzera-widgets
+
+---
+
+### D059 — Animation VSync Integration
+**Status**: LOCKED
+**Decision**: `tezzera-animate` owns a global frame-delta clock:
+`static FRAME_DT: AtomicU32` (f32 bits stored as u32). Platform writes the
+real elapsed time via `tezzera_animate::set_frame_dt(dt)` at the start of
+every `RedrawRequested` event, before the render pass. All animation hooks
+(`use_spring`, `use_animation`) read `frame_dt()` — never hardcode a timestep.
+`dt` is clamped to `[0.001, 0.1]` seconds to survive tab-out / system sleep.
+Platform adds `tezzera-animate` as a dependency. No registry, no callbacks —
+the existing self-perpetuating atom pattern keeps frames coming while an
+animation is running. The platform also tracks `last_frame_time: Instant` to
+compute wall-clock dt.
+A new `use_animation(ctx, duration) -> (Progress, AnimCtrl)` hook wraps
+`AnimationController` with the same automatic ticking — user never calls
+`tick(dt)` manually. `AnimCtrl::play()`, `pause()`, `reset()` are the full API.
+`Progress::get()` returns `0.0..=1.0`, updating every frame while running.
+**Reason**: Hardcoded `1/60` timestep is wrong on 120Hz monitors and broken
+under frame drops. Animation should be frame-rate independent and driven by the
+platform's real clock, exactly as widget painting is driven by VSync.
+**Affects**: tezzera-animate, tezzera-platform
+
+---
+
+### D057 — RectReader / Geometry Callback
+**Status**: LOCKED
+**Decision**: A `RectReader` wrapper widget captures the screen-space `Rect`
+of any child after layout and writes it into a user-supplied `Atom<Option<Rect>>`.
+Fires inside `paint()` using `ctx.rect` — the exact window-pixel rect already
+computed by the layout pass. No extra measurement, no separate pass.
+`RectReader::new(atom, child)` — composes over any widget without modifying it.
+The atom update triggers a frame, allowing other widgets to read the rect and
+position themselves accordingly.
+**Reason**: Real-world apps need to know where a widget landed so they can
+position overlays, tooltips, dropdowns, and other context-sensitive UI relative
+to it. This is the missing link between layout and the overlay system.
+**Affects**: tezzera-widgets
+
+---
+
+### D058 — Overlay Layer (revised)
+**Status**: LOCKED
+**Decision**: A second `PictureRecorder` (overlay recorder) runs after the main
+tree paint pass. The canvas replays main picture first, overlay picture second.
+The overlay stack is an ordered `Vec<OverlayEntry>` — insertion order = z-order.
+
+```rust
+pub struct OverlayEntry {
+    pub id:       LayerId,
+    pub position: LayerPosition,   // Absolute(Point) | Centered | BottomAnchored | Fill
+    pub widget:   BoxedWidget,     // interactive content only
+    pub input:    InputBehavior,   // PassThrough | Block
+    pub focus:    FocusBehavior,   // PassThrough | Trap | Inert
+    pub scrim:    Option<ScrimConfig>,
+}
+
+pub struct ScrimConfig {
+    pub color:  Color,
+    pub on_tap: Option<Arc<dyn Fn() + Send + Sync>>,
+    // None = absorb silently. Some(f) = call f when scrim area tapped (dismiss).
+}
+```
+
+**Scrim** is renderer-owned — drawn as a FillRect before the widget, no hit
+target registered for it. The `on_tap` callback fires when a click lands outside
+the widget rect and the entry has a scrim. Scrim and `Block` are independent:
+a decorative scrim can be `PassThrough`; a true modal can have no scrim.
+
+**Input routing** — scan overlay stack top → bottom on every input event:
+- Point hits `entry.widget` rect → deliver to widget, stop
+- Point misses + `Block` → if `scrim.on_tap` exists fire it, else swallow, stop
+- Point misses + `PassThrough` → continue down
+- Nothing claimed → deliver to main tree
+
+**Multiple dialogs** stack naturally. Each dialog entry is `Fill + Block + scrim`.
+Dialog2 on top of Dialog1: clicking outside Dialog2 fires Dialog2's scrim dismiss
+(or is swallowed). Dialog1 becomes active again once Dialog2 is popped.
+
+**Bottom sheet** — `position: BottomAnchored`, `input: PassThrough`, optional scrim.
+Clicks above the sheet miss the widget rect and fall through to main (PassThrough).
+Tapping the scrim above the sheet calls `scrim.on_tap` to dismiss.
+
+**Registry** is cleared at the start of every frame and rebuilt during paint.
+**Reason**: Clean separation of visual (scrim as renderer rect), input (Block vs
+PassThrough), and focus (Trap vs PassThrough). Multiple stacked modals work by
+insertion order. Scrim tap-to-dismiss is explicit, not implicit.
+**Affects**: tezzera-widgets, tezzera (App::launch render loop)
+
+---
+
+### D060 — Focus System
+**Status**: LOCKED
+**Decision**: `FocusManager` (already in `tezzera-a11y`) is extended to be
+overlay-aware. Focus scope is determined by the topmost overlay entry with
+`FocusBehavior::Trap` — Tab cycles only within that entry's focusable nodes.
+When no Trap entry exists, Tab cycles globally across main tree + all overlay
+entries in z-order (bottom to top).
+
+Tab ordering within a scope uses `tab_index: Option<i32>` on widgets:
+- `None` → natural tree order (default)
+- `Some(n)` → explicit position; lower = earlier; ties broken by tree order
+- `Some(-1)` → focusable by click but excluded from Tab cycle
+
+`FocusManager::sync_with_overlay(stack, tree)` rebuilds focus order each frame
+from the current overlay stack + main tree. Called after the paint pass.
+**Affects**: tezzera-a11y, tezzera-widgets, tezzera (render loop)
+
+---
+
+### D061 — Navigation Route Stack
+**Status**: LOCKED
+**Decision**: `Navigator` in `tezzera-nav` manages a `Vec<Route>`. Only the
+top route is active — rendered, hit-testable, focusable. All other routes are
+**frozen**: component state (atoms, hook slots) is preserved in memory, but no
+layout pass, no paint pass, and no hit targets or focus nodes are registered
+from them.
+
+```rust
+pub struct Route {
+    pub id:        RouteId,
+    pub component: Box<dyn Component>,
+    pub state:     FrozenState,   // atom values, hook slots preserved
+}
+
+pub enum FrozenState { Active, Frozen }
+```
+
+`Navigator::push(route)` → freezes current top, activates new route.
+`Navigator::pop()` → drops top route (fires `on_unmount`, clears atom state
+via `tezzera_state::clear_component()`), unfreezes and re-activates the route below.
+
+Routes are **not** overlay entries. They replace the screen. Overlays sit above
+the active route's render output. The navigator is orthogonal to the overlay stack.
+
+A frozen route's atoms retain their values. Scroll positions, text inputs, and
+all component state survive navigation round-trips. State is only cleared on
+explicit pop (not on freeze).
+**Reason**: Back-navigation should feel instant — no rebuild, no lost state.
+Frozen routes cost memory but zero CPU. Clear separation from overlays prevents
+the two systems from coupling.
+**Affects**: tezzera-nav, tezzera (render loop)
+
+---
+
+### D062 — Co-location Overlay API
+**Status**: LOCKED
+**Decision**: Overlay entries are declared on the widget that triggers them, not
+pushed manually to a global registry. Builder methods on interactive widgets
+resolve to `OverlayEntry` pushed automatically by the framework:
+
+```rust
+Button::new("Open")
+    .dropdown(is_open.clone(), || DropdownMenu::new()...)
+
+Button::new("Settings")
+    .sheet(is_open.clone(), || SettingsSheet::new()...)
+
+Button::new("Delete")
+    .dialog(is_open.clone(), || {
+        Dialog::new("Are you sure?")
+            .action("Cancel", || is_open.set(false))
+            .action("Delete", on_delete.clone())
+    })
+```
+
+Each method takes `Atom<bool>` (open/closed state) and a builder closure.
+When the atom is true, the framework pushes the corresponding `OverlayEntry`
+to the registry with correct `InputBehavior`, `FocusBehavior`, and `ScrimConfig`
+pre-configured for each type:
+- `.dropdown()` → PassThrough, PassThrough, no scrim, Absolute(anchor.bottom_left())
+- `.sheet()`    → PassThrough, PassThrough, scrim+dismiss, BottomAnchored
+- `.dialog()`  → Block, Trap, scrim+dismiss, Centered
+- `.tooltip()` → PassThrough, Inert, no scrim, Absolute(anchor.top_left())
+
+The global `OverlayEntry` registry (D058) remains the engine. This is pure API
+sugar — zero engine change. `push_overlay()` remains available for advanced use.
+**Reason**: Co-location (SwiftUI style) — overlay declared where trigger is —
+is more readable and less error-prone than a global registry call site.
+**Affects**: tezzera-widgets
+
+---
+
+### D063 — FocusNode Graph
+**Status**: LOCKED
+**Decision**: Replace `tab_index: Option<i32>` with a `FocusNode` reference
+type. A `FocusNode` is a shared handle (`Arc<FocusNodeInner>`) that can be
+attached to any focusable widget and wired to its neighbors:
+
+```rust
+let username = FocusNode::new();
+let password = FocusNode::new();
+let submit   = FocusNode::new();
+
+TextInput::new("Username").focus_node(username.clone())
+TextInput::new("Password").focus_node(password.clone())
+    .focus_next(submit.clone())          // Enter / Tab → submit
+    .focus_prev(username.clone())        // Shift+Tab → username
+Button::new("Login").focus_node(submit.clone())
+    .focus_prev(password.clone())
+```
+
+Each `FocusNode` stores: `next: Option<FocusNode>`, `prev: Option<FocusNode>`,
+`focused: Atom<bool>` (reactive — widget reads this to draw focus ring).
+`FocusNode::new()` with no explicit neighbors falls back to natural tree order.
+`FocusNode::request()` programmatically focuses a node (e.g. auto-focus on mount).
+
+`FocusManager` builds traversal order from the graph at sync time. If a node
+has explicit `next`, follow it. Otherwise fall back to next node in tree order.
+
+Grid navigation, arrow-key flows, and gamepad D-pad are all expressible as
+neighbor connections — impossible with a flat integer.
+**Reason**: Flutter's FocusNode model. Integer tab_index cannot express
+non-linear focus (grids, carousels, custom keyboard flows).
+**Affects**: tezzera-a11y, tezzera-widgets (Phase 14)
+
+---
+
+### D064 — Widget Semantic API
+**Status**: LOCKED
+**Decision**: Every widget can optionally declare semantic information that
+feeds the `A11yTree`. Two mechanisms, both compile to the same `SemanticConfig`:
+
+**1. Automatic — standard widgets self-annotate:**
+Button, Checkbox, Slider, TextInput, Switch automatically provide semantics
+based on their own properties. No user action needed.
+
+**2. Builder methods — override or augment:**
+```rust
+Image::file("photo.png")
+    .accessibility_label("A sunset over the mountains")
+
+Container::new()
+    .accessibility_role(Role::Navigation)
+
+Text::new("3 unread messages")
+    .accessibility_live()       // screen reader announces changes
+```
+
+**3. `Semantics` wrapper — for non-interactive widgets:**
+```rust
+Semantics::new(Role::Article)
+    .label("News item")
+    .child(Column::new()...)
+```
+
+The `Widget` trait gains:
+```rust
+fn semantics(&self) -> Option<SemanticConfig> { None }
+```
+
+`SemanticConfig`:
+```rust
+pub struct SemanticConfig {
+    pub role:     Role,
+    pub label:    Option<String>,
+    pub hint:     Option<String>,
+    pub value:    Option<String>,
+    pub checked:  Option<bool>,
+    pub disabled: bool,
+    pub live:     bool,      // announces changes to screen reader
+    pub hidden:   bool,      // excludes from a11y tree entirely
+}
+```
+
+During the paint pass, alongside registering `HitTarget`s, widgets with
+`semantics()` returning `Some(config)` add an `A11yNode` to the current frame's
+`A11yTree`. The node receives `ctx.rect` as its bounds. The tree is rebuilt
+every frame, synced into `FocusManager`, and eventually sent to platform
+AT-SPI/UIA/AXKit (Phase 21).
+
+**Reason**: SwiftUI modifier style + Flutter Semantics widget — both patterns
+available so simple cases are simple and complex cases are possible.
+**Affects**: tezzera-widgets, tezzera-a11y, tezzera (render loop)
+
+---
+
 ## DEFERRED DECISIONS
 
 ```
