@@ -113,7 +113,9 @@ impl From<SizedBox> for Element {
         let children = sb.child.map(|c| vec![c]).unwrap_or_default();
         Element::Native(NativeElement {
             tag: "SizedBox",
+            payload: None,
             children,
+            key: None,
         })
     }
 }

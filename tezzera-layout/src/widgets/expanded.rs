@@ -50,7 +50,9 @@ impl From<Expanded> for Element {
         let children = e.child.map(|c| vec![c]).unwrap_or_default();
         Element::Native(NativeElement {
             tag: "Expanded",
+            payload: None,
             children,
+            key: None,
         })
     }
 }

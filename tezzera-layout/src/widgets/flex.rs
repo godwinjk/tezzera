@@ -145,7 +145,7 @@ impl Flex {
 }
 
 /// Core column layout algorithm shared by [`Flex`] and [`Column`].
-pub(crate) fn layout_column(
+pub fn layout_column(
     constraints: Constraints,
     child_sizes: &[Size],
     main_axis_alignment: MainAxisAlignment,
@@ -211,7 +211,7 @@ pub(crate) fn layout_column(
 }
 
 /// Core row layout algorithm shared by [`Flex`] and [`Row`].
-pub(crate) fn layout_row(
+pub fn layout_row(
     constraints: Constraints,
     child_sizes: &[Size],
     main_axis_alignment: MainAxisAlignment,
@@ -341,7 +341,9 @@ impl From<Flex> for Element {
     fn from(f: Flex) -> Self {
         Element::Native(NativeElement {
             tag: "Flex",
+            payload: None,
             children: f.children,
+            key: None,
         })
     }
 }

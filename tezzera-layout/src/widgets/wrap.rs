@@ -169,7 +169,9 @@ impl From<Wrap> for Element {
     fn from(w: Wrap) -> Self {
         Element::Native(NativeElement {
             tag: "Wrap",
+            payload: None,
             children: w.children,
+            key: None,
         })
     }
 }

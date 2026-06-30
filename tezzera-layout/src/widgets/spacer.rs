@@ -40,7 +40,9 @@ impl From<Spacer> for Element {
     fn from(_s: Spacer) -> Self {
         Element::Native(NativeElement {
             tag: "Spacer",
+            payload: None,
             children: vec![],
+            key: None,
         })
     }
 }

@@ -133,7 +133,9 @@ impl From<Column> for Element {
     fn from(c: Column) -> Self {
         Element::Native(NativeElement {
             tag: "Column",
+            payload: None,
             children: c.children,
+            key: None,
         })
     }
 }

@@ -165,7 +165,9 @@ impl From<Grid> for Element {
     fn from(g: Grid) -> Self {
         Element::Native(NativeElement {
             tag: "Grid",
+            payload: None,
             children: g.children,
+            key: None,
         })
     }
 }

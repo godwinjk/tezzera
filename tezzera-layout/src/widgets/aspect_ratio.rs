@@ -96,7 +96,9 @@ impl From<AspectRatio> for Element {
         let children = ar.child.map(|c| vec![c]).unwrap_or_default();
         Element::Native(NativeElement {
             tag: "AspectRatio",
+            payload: None,
             children,
+            key: None,
         })
     }
 }

@@ -119,7 +119,9 @@ impl From<Stack> for Element {
     fn from(s: Stack) -> Self {
         Element::Native(NativeElement {
             tag: "Stack",
+            payload: None,
             children: s.children,
+            key: None,
         })
     }
 }
