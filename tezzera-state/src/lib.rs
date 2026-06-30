@@ -13,15 +13,20 @@ pub mod async_state;
 pub mod atom;
 pub mod atom_id_gen;
 pub mod batch;
+pub mod cleanup_store;
+pub mod frame_scheduler;
 pub mod global_atom;
 pub mod refresh_engine;
+pub mod state_store;
 
 pub use async_state::{AsyncError, AsyncState};
 pub use atom::Atom;
 pub use atom_id_gen::next_atom_id;
 pub use batch::{batch, is_batching, Priority};
+pub use frame_scheduler::{register_wakeup, request_frame, take_frame_requested};
 pub use global_atom::GlobalAtom;
 pub use refresh_engine::RefreshEngine;
+pub use state_store::{hook_state, clear_component};
 
 /// Creates a new local atom initialised with `default`.
 ///

@@ -146,8 +146,11 @@ impl<T: 'static> Atom<T> {
 
         if crate::batch::is_batching() {
             crate::batch::queue_dirty(atom_id, subscribers);
-        } else if let Some(cb) = on_change {
-            cb(atom_id, subscribers);
+        } else {
+            crate::frame_scheduler::request_frame();
+            if let Some(cb) = on_change {
+                cb(atom_id, subscribers);
+            }
         }
     }
 
@@ -182,8 +185,11 @@ impl<T: 'static> Atom<T> {
 
         if crate::batch::is_batching() {
             crate::batch::queue_dirty(atom_id, subscribers);
-        } else if let Some(cb) = on_change {
-            cb(atom_id, subscribers);
+        } else {
+            crate::frame_scheduler::request_frame();
+            if let Some(cb) = on_change {
+                cb(atom_id, subscribers);
+            }
         }
     }
 

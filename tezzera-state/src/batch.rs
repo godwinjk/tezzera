@@ -45,6 +45,13 @@ pub fn batch<F: FnOnce()>(f: F) {
     f();
     BATCHING.with(|b| b.set(false));
 
-    // Phase 1: drain and discard; refresh engine dispatch wired in integration step.
-    PENDING_DIRTY.with(|q| q.borrow_mut().clear());
+    let had_dirty = PENDING_DIRTY.with(|q| {
+        let mut q = q.borrow_mut();
+        let had = !q.is_empty();
+        q.clear();
+        had
+    });
+    if had_dirty {
+        crate::frame_scheduler::request_frame();
+    }
 }
