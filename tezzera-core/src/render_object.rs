@@ -8,7 +8,7 @@ use crate::types::{Point, Size};
 pub struct Canvas;
 
 /// Describes a bound along a single layout axis.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum AxisBound {
     /// The axis has a finite pixel limit.
     Bounded(f32),
@@ -22,7 +22,7 @@ pub enum AxisBound {
 ///
 /// Distinct from `tezzera_trace::event::TraceConstraints`, which is a
 /// simplified snapshot for tracing purposes only.
-#[derive(Clone, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Constraints {
     /// Minimum allowed width in logical pixels.
     pub min_width: f32,

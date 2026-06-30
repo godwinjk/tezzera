@@ -1,51 +1,44 @@
 use crate::types::ComponentId;
-use tezzera_state::{use_atom as create_atom, Atom};
+use tezzera_state::{hook_state, Atom};
 
-/// Per-component build context passed to every `TezzeraComponent::build` call.
+/// Per-component context passed to every [`Component::build`] call.
 ///
-/// The context is the component's handle to the framework during a build: it
-/// carries the component's identity and accumulates cleanup callbacks that run
-/// when the component unmounts.
+/// Carries the component's identity and provides access to persistent local
+/// state via [`Context::state`]. State is keyed by `(component_id, call_order)`
+/// — the hook model — so call order within `build()` must be stable across frames.
 pub struct Context {
-    /// Identity of the component that owns this context.
     pub(crate) component_id: ComponentId,
-    /// Callbacks registered via `on_cleanup` / `on_unmount` / `on_mount`.
-    pub(crate) unmount_callbacks: Vec<Box<dyn FnOnce() + Send>>,
+    pub(crate) hook_index: usize,
 }
 
 impl Context {
-    /// Creates a new `Context` for the component with the given `id`.
     pub fn new(id: ComponentId) -> Self {
         Context {
             component_id: id,
-            unmount_callbacks: Vec::new(),
+            hook_index: 0,
         }
     }
 
-    /// Returns the `ComponentId` of the component that owns this context.
     pub fn component_id(&self) -> ComponentId {
         self.component_id
     }
 
-    /// Registers a cleanup function to run when the component unmounts.
-    pub fn on_cleanup(&mut self, f: impl FnOnce() + Send + 'static) {
-        self.unmount_callbacks.push(Box::new(f));
-    }
-
-    /// Creates a local atom scoped to this component's lifetime.
-    /// The atom is initialized with `default` on first call.
+    /// Returns a persistent [`Atom<T>`] for local component state.
+    ///
+    /// On first call per slot the atom is seeded with `default`. On subsequent
+    /// frames the existing atom is returned, preserving the last value.
     pub fn state<T: Clone + Send + Sync + 'static>(&mut self, default: T) -> Atom<T> {
-        create_atom(default)
+        let idx = self.hook_index;
+        self.hook_index += 1;
+        hook_state(self.component_id, idx, default)
     }
-}
 
-impl Drop for Context {
-    fn drop(&mut self) {
-        // Drain and invoke every registered cleanup in registration order.
-        let callbacks: Vec<Box<dyn FnOnce() + Send>> =
-            std::mem::take(&mut self.unmount_callbacks);
-        for cb in callbacks {
-            cb();
-        }
+    /// Registers a cleanup function that runs when this component unmounts.
+    ///
+    /// Stored in the persistent [`tezzera_state::cleanup_store`] keyed by
+    /// component ID. The reconciler fires these callbacks when the component
+    /// disappears from the element tree.
+    pub fn on_cleanup(&mut self, f: impl FnOnce() + Send + 'static) {
+        tezzera_state::cleanup_store::register(self.component_id, Box::new(f));
     }
 }

@@ -4,14 +4,14 @@ use crate::element::Element;
 ///
 /// Holds the root element and (in future phases) the platform event-loop
 /// handle, window configuration, and service registrations.
-pub struct TezzeraApp {
+pub struct App {
     root: Option<Element>,
 }
 
-impl TezzeraApp {
-    /// Creates a new `TezzeraApp` with no root element.
+impl App {
+    /// Creates a new `App` with no root element.
     pub fn new() -> Self {
-        TezzeraApp { root: None }
+        App { root: None }
     }
 
     /// Sets the root element of the application.
@@ -32,8 +32,8 @@ impl TezzeraApp {
     }
 }
 
-impl Default for TezzeraApp {
+impl Default for App {
     fn default() -> Self {
-        TezzeraApp::new()
+        App::new()
     }
 }
