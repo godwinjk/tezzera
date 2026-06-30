@@ -1,7 +1,8 @@
 /// The loading state of an async resource.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Default)]
 pub enum LoadState<T: Clone> {
     /// Not started.
+    #[default]
     Idle,
     /// Request is in flight.
     Loading,
@@ -36,9 +37,6 @@ impl<T: Clone> LoadState<T> {
     }
 }
 
-impl<T: Clone> Default for LoadState<T> {
-    fn default() -> Self { LoadState::Idle }
-}
 
 // ---------------------------------------------------------------------------
 // Tests

@@ -1,6 +1,7 @@
 /// Animation easing function selector.
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub enum Easing {
+    #[default]
     Linear,
     EaseIn,
     EaseOut,
@@ -11,11 +12,6 @@ pub enum Easing {
     Spring { stiffness: f32, damping: f32 },
 }
 
-impl Default for Easing {
-    fn default() -> Self {
-        Easing::Linear
-    }
-}
 
 /// Map normalized time t (0.0–1.0) to eased progress (0.0–1.0).
 ///

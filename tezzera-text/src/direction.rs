@@ -1,16 +1,13 @@
 /// Text flow direction.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum TextDirection {
     /// Left-to-right (Latin, default).
     Ltr,
     /// Right-to-left (Arabic, Hebrew).
     Rtl,
     /// Detect from first strong bidi character.
+    #[default]
     Auto,
-}
-
-impl Default for TextDirection {
-    fn default() -> Self { TextDirection::Auto }
 }
 
 /// Detect text direction by scanning for the first strongly-directional Unicode character.

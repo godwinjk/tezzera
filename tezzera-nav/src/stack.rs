@@ -1,6 +1,7 @@
 use std::sync::{Arc, Mutex};
 
 use tezzera_state::Atom;
+#[cfg(debug_assertions)]
 use tezzera_trace::event::{Route as TraceRoute, Transition};
 
 use crate::history::KeepAliveRegistry;
@@ -36,13 +37,16 @@ impl<R: Route> NavigationStack<R> {
 
     /// Pushes `route` onto the stack, making it the current screen.
     pub fn push(&self, route: R) {
-        let from = self.current().map(|r| TraceRoute(format!("{:?}", r)));
-        let to = TraceRoute(format!("{:?}", route));
-        tezzera_trace::trace!(tezzera_trace::event::TezzeraTrace::RouteChange {
-            from,
-            to,
-            transition: Transition("push".to_string()),
-        });
+        #[cfg(debug_assertions)]
+        {
+            let from = self.current().map(|r| TraceRoute(format!("{:?}", r)));
+            let to = TraceRoute(format!("{:?}", route));
+            tezzera_trace::TRACING_BUS.emit(tezzera_trace::event::TezzeraTrace::RouteChange {
+                from,
+                to,
+                transition: Transition("push".to_string()),
+            });
+        }
         self.stack.update(|s| {
             let mut s = s.clone();
             s.push(route);
@@ -56,20 +60,24 @@ impl<R: Route> NavigationStack<R> {
         let can_pop = self.stack.get().len() > 1;
         if can_pop {
             let popped = self.stack.get().last().cloned();
+            #[cfg(debug_assertions)]
             let below = {
                 let s = self.stack.get();
                 s.get(s.len().saturating_sub(2)).cloned()
             };
-            let from = popped.as_ref().map(|r| TraceRoute(format!("{:?}", r)));
-            let to_route = below
-                .as_ref()
-                .map(|r| format!("{:?}", r))
-                .unwrap_or_default();
-            tezzera_trace::trace!(tezzera_trace::event::TezzeraTrace::RouteChange {
-                from,
-                to: TraceRoute(to_route),
-                transition: Transition("pop".to_string()),
-            });
+            #[cfg(debug_assertions)]
+            {
+                let from = popped.as_ref().map(|r| TraceRoute(format!("{:?}", r)));
+                let to_route = below
+                    .as_ref()
+                    .map(|r| format!("{:?}", r))
+                    .unwrap_or_default();
+                tezzera_trace::TRACING_BUS.emit(tezzera_trace::event::TezzeraTrace::RouteChange {
+                    from,
+                    to: TraceRoute(to_route),
+                    transition: Transition("pop".to_string()),
+                });
+            }
             if let Some(route) = popped {
                 self.keep_alive.lock().unwrap().push(route);
             }
@@ -84,13 +92,16 @@ impl<R: Route> NavigationStack<R> {
 
     /// Replaces the current route without adding to the history depth.
     pub fn replace(&self, route: R) {
-        let from = self.current().map(|r| TraceRoute(format!("{:?}", r)));
-        let to = TraceRoute(format!("{:?}", route));
-        tezzera_trace::trace!(tezzera_trace::event::TezzeraTrace::RouteChange {
-            from,
-            to,
-            transition: Transition("replace".to_string()),
-        });
+        #[cfg(debug_assertions)]
+        {
+            let from = self.current().map(|r| TraceRoute(format!("{:?}", r)));
+            let to = TraceRoute(format!("{:?}", route));
+            tezzera_trace::TRACING_BUS.emit(tezzera_trace::event::TezzeraTrace::RouteChange {
+                from,
+                to,
+                transition: Transition("replace".to_string()),
+            });
+        }
         self.stack.update(|s| {
             let mut s = s.clone();
             if let Some(last) = s.last_mut() {
@@ -103,13 +114,16 @@ impl<R: Route> NavigationStack<R> {
     /// Clears the entire stack and resets to a single `route` as the new root.
     /// The keep-alive registry is also cleared (D030).
     pub fn reset_to(&self, route: R) {
-        let from = self.current().map(|r| TraceRoute(format!("{:?}", r)));
-        let to = TraceRoute(format!("{:?}", route));
-        tezzera_trace::trace!(tezzera_trace::event::TezzeraTrace::RouteChange {
-            from,
-            to,
-            transition: Transition("reset".to_string()),
-        });
+        #[cfg(debug_assertions)]
+        {
+            let from = self.current().map(|r| TraceRoute(format!("{:?}", r)));
+            let to = TraceRoute(format!("{:?}", route));
+            tezzera_trace::TRACING_BUS.emit(tezzera_trace::event::TezzeraTrace::RouteChange {
+                from,
+                to,
+                transition: Transition("reset".to_string()),
+            });
+        }
         self.keep_alive.lock().unwrap().clear();
         self.stack.update(|_| vec![route]);
     }

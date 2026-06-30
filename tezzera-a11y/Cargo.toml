@@ -7,4 +7,5 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
-tezzera-core = { path = "../tezzera-core" }
+tezzera-core  = { path = "../tezzera-core" }
+tezzera-state = { path = "../tezzera-state" }

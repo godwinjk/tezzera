@@ -29,7 +29,7 @@ impl StyleSheet {
         self.rules_for(selector)
             .into_iter()
             .filter_map(|r| r.get(prop))
-            .last()
+            .next_back()
     }
 
     pub fn rule_count(&self) -> usize { self.rules.len() }

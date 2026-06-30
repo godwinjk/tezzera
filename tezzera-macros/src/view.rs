@@ -34,7 +34,8 @@ struct Element {
 /// Note: struct-literal expressions in prop values (`Prop: Foo { x: 1 }`) are
 /// not supported in Phase 1 because the two syntaxes are ambiguous. Use a
 /// variable or function call instead.
-fn parse_items(input: ParseStream) -> ParseResult<(Vec<(Ident, Expr)>, Vec<Element>)> {
+type ParseItemsResult = (Vec<(Ident, Expr)>, Vec<Element>);
+fn parse_items(input: ParseStream) -> ParseResult<ParseItemsResult> {
     let mut props: Vec<(Ident, Expr)> = Vec::new();
     let mut children: Vec<Element> = Vec::new();
 

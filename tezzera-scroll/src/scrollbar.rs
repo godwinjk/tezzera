@@ -32,6 +32,7 @@ impl ScrollbarMetrics {
 /// Render a scrollbar thumb onto `canvas` for the given viewport and scroll state.
 ///
 /// `opacity` in `0.0–1.0` controls the thumb alpha (used for the fade-out effect).
+#[allow(clippy::too_many_arguments)]
 pub fn render_scrollbar(
     canvas: &mut SkiaCanvas,
     direction: ScrollDirection,

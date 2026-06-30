@@ -14,9 +14,15 @@ pub enum RebuildTarget {
     Web,
 }
 
+impl Default for RebuildRunner {
+    fn default() -> Self {
+        Self { target: RebuildTarget::Desktop, package: None }
+    }
+}
+
 impl RebuildRunner {
     pub fn new() -> Self {
-        Self { target: RebuildTarget::Desktop, package: None }
+        Self::default()
     }
 
     pub fn target(mut self, t: RebuildTarget) -> Self { self.target = t; self }

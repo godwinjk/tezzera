@@ -37,7 +37,7 @@ impl<T: Lerp> Timeline<T> {
         }
     }
 
-    pub fn add(mut self, kf: Keyframe<T>) -> Self {
+    pub fn with_keyframe(mut self, kf: Keyframe<T>) -> Self {
         self.keyframes.push(kf);
         self
     }
@@ -128,8 +128,8 @@ mod tests {
 
     fn make_timeline() -> Timeline<f32> {
         Timeline::new()
-            .add(Keyframe::linear(0.0, 0.0))
-            .add(Keyframe::linear(1.0, 100.0))
+            .with_keyframe(Keyframe::linear(0.0, 0.0))
+            .with_keyframe(Keyframe::linear(1.0, 100.0))
     }
 
     #[test]
@@ -141,7 +141,7 @@ mod tests {
 
     #[test]
     fn timeline_add_keyframe() {
-        let t = Timeline::new().add(Keyframe::linear(0.0, 0.0_f32));
+        let t = Timeline::new().with_keyframe(Keyframe::linear(0.0, 0.0_f32));
         assert_eq!(t.keyframe_count(), 1);
     }
 
@@ -188,8 +188,8 @@ mod tests {
     fn timeline_sample_before_first_keyframe() {
         // First keyframe at 0.2, not 0.0
         let t = Timeline::new()
-            .add(Keyframe::linear(0.2, 10.0_f32))
-            .add(Keyframe::linear(1.0, 100.0));
+            .with_keyframe(Keyframe::linear(0.2, 10.0_f32))
+            .with_keyframe(Keyframe::linear(1.0, 100.0));
         // t < 0.2 should clamp to first keyframe value
         assert!((t.sample(0.0) - 10.0).abs() < 1e-5);
         assert!((t.sample(0.1) - 10.0).abs() < 1e-5);
@@ -199,8 +199,8 @@ mod tests {
     fn timeline_sample_after_last_keyframe() {
         // Last keyframe at 0.8
         let t = Timeline::new()
-            .add(Keyframe::linear(0.0, 0.0_f32))
-            .add(Keyframe::linear(0.8, 80.0));
+            .with_keyframe(Keyframe::linear(0.0, 0.0_f32))
+            .with_keyframe(Keyframe::linear(0.8, 80.0));
         // t > 0.8 should clamp to last keyframe value
         assert!((t.sample(1.0) - 80.0).abs() < 1e-5);
         assert!((t.sample(0.9) - 80.0).abs() < 1e-5);

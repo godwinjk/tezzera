@@ -61,14 +61,14 @@ impl TextLayout {
             let trailing_space = span.text.ends_with(' ');
 
             for (i, word) in words.iter().enumerate() {
-                let prefix = if i == 0 && leading_space { " " } else if i > 0 { " " } else { "" };
+                let prefix = if leading_space && i == 0 || i > 0 { " " } else { "" };
                 let token = format!("{}{}", prefix, word);
                 let token_span = TextSpan::new(&token, span.style.clone());
                 let token_w = token_span.estimated_width();
 
                 if !current.is_empty() && current.width + token_w > max_width {
                     // Wrap: commit current line, start new
-                    lines.push(std::mem::replace(&mut current, TextLine::new()));
+                    lines.push(std::mem::take(&mut current));
                 }
                 current.push_span(token_span);
             }
@@ -106,13 +106,13 @@ impl TextLayout {
             let trailing_space = span.text.ends_with(' ');
 
             for (i, word) in words.iter().enumerate() {
-                let prefix = if i == 0 && leading_space { " " } else if i > 0 { " " } else { "" };
+                let prefix = if leading_space && i == 0 || i > 0 { " " } else { "" };
                 let token = format!("{}{}", prefix, word);
                 let token_w = measure(&token, span.style.font_size);
                 let token_span = TextSpan::new(&token, span.style.clone());
 
                 if !current.is_empty() && current.width + token_w > max_width {
-                    lines.push(std::mem::replace(&mut current, TextLine::new()));
+                    lines.push(std::mem::take(&mut current));
                 }
                 current.push_span_with_width(token_span, token_w);
             }

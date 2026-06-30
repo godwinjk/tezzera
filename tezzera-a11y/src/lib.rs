@@ -22,11 +22,13 @@
 //! ```
 
 pub mod focus;
+pub mod focus_node;
 pub mod node;
 pub mod role;
 pub mod tree;
 
 pub use focus::FocusManager;
+pub use focus_node::FocusNode;
 pub use node::A11yNode;
 pub use role::Role;
 pub use tree::A11yTree;

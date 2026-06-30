@@ -3,8 +3,10 @@ use crate::class::{bidi_class, BidiClass};
 /// Detect the paragraph embedding level (TR#9 §3.3 P2/P3).
 ///
 /// Scans for the first strongly-directional character:
+///
 /// - L → level 0 (LTR)
 /// - R or AL → level 1 (RTL)
+///
 /// Returns 0 if no strong character is found.
 pub fn paragraph_level(text: &str) -> u8 {
     for ch in text.chars() {

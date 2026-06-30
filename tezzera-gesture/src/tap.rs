@@ -57,7 +57,7 @@ impl GestureRecognizer for TapRecognizer {
                 None
             }
             InputEvent::MouseUp { x, y, button: MouseButton::Left } => {
-                let Some((dx, dy)) = self.down_pos.take() else { return None; };
+                let (dx, dy) = self.down_pos.take()?;
                 if (*x - dx).abs() > MAX_TAP_MOVE || (*y - dy).abs() > MAX_TAP_MOVE {
                     return None;
                 }
