@@ -939,6 +939,42 @@ Implementation: `RepaintBoundary` is a `NativeElement` with tag `"RepaintBoundar
 
 ---
 
+### D072 — GPU Backend Choice
+**Status**: LOCKED
+**Question**: Which GPU API should the compositor target?
+**Decision**: **wgpu** (not raw Vulkan/Metal/DX12). wgpu selects the best native backend per OS at runtime (Metal on macOS, Vulkan/DX12 on Windows/Linux). Pure-Rust API, no C++ toolchain required. D032 is unaffected — tiny-skia remains the CPU rasterizer; wgpu is the display backend only. The swap is isolated to `tezzera-compositor` + `tezzera-platform`.
+**Reason**: GPU blit via wgpu enables 120fps and future multi-layer GPU compositing without a full CPU readback per frame.
+**Affects**: `tezzera-compositor` (new crate), `tezzera-platform`
+
+---
+
+### D073 — GPU Texture Pixel Format
+**Status**: LOCKED
+**Question**: What pixel format is used for the CPU→GPU upload?
+**Decision**: Upload as `Rgba8Unorm`; the WGSL shader reads it directly. tiny-skia produces RGBA8. The wgpu surface format is queried from the adapter at init time and the compositor matches it — no manual format detection needed.
+**Reason**: `Rgba8Unorm` is universally supported and matches tiny-skia's byte order directly.
+**Affects**: `tezzera-compositor`
+
+---
+
+### D074 — Compositor Architecture
+**Status**: LOCKED
+**Question**: Where does wgpu initialization live and how does it integrate with tezzera-platform?
+**Decision**: Standalone `tezzera-compositor` crate exports `GpuPresenter`. `tezzera-platform` depends on it and initializes `GpuPresenter` in `AppState::resumed()`. If wgpu init fails, `presenter = None` and the softbuffer fallback path activates silently. No feature flag — the GPU path is always attempted.
+**Reason**: Keeps wgpu entirely out of the widget/render crates. Softbuffer fallback prevents crashes on CI/headless environments.
+**Affects**: `tezzera-compositor` (new), `tezzera-platform`
+
+---
+
+### D075 — Compositor Shader
+**Status**: LOCKED
+**Question**: What is the compositor's render pipeline?
+**Decision**: Minimal WGSL fullscreen-quad shader. Vertex shader generates 6 vertices from `vertex_index` (two triangles, no vertex buffer). Fragment shader samples the uploaded frame texture with nearest-neighbour filtering (pixels are already at physical resolution — no upscaling needed). No mipmaps, no sRGB correction (tiny-skia already handles gamma).
+**Reason**: Minimum viable GPU blit. No vertex buffers, no index buffers, no uniform buffers. A single bind group with texture + sampler is all that's needed.
+**Affects**: `tezzera-compositor`
+
+---
+
 ## DEFERRED DECISIONS
 
 ```

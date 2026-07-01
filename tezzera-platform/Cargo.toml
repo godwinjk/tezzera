@@ -6,13 +6,15 @@ authors.workspace = true
 license.workspace = true
 
 [dependencies]
-tezzera-animate = { path = "../tezzera-animate" }
-tezzera-core    = { path = "../tezzera-core" }
-tezzera-render  = { path = "../tezzera-render" }
-tezzera-state   = { path = "../tezzera-state" }
-tezzera-trace   = { path = "../tezzera-trace" }
-winit           = "0.30"
-softbuffer      = "0.4"
+tezzera-animate    = { path = "../tezzera-animate" }
+tezzera-compositor = { path = "../tezzera-compositor" }
+tezzera-core       = { path = "../tezzera-core" }
+tezzera-render     = { path = "../tezzera-render" }
+tezzera-state      = { path = "../tezzera-state" }
+tezzera-trace      = { path = "../tezzera-trace" }
+log                = "0.4"
+winit              = "0.30"
+softbuffer         = "0.4"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wasm-bindgen = "0.2"

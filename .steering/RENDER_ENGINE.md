@@ -579,13 +579,15 @@ Phase 13 additions (D065–D068):
   ✅ PartialEq on Size/Point/Rect — enables rect-equality cache check
 
 Phase 14:
-  ⬜ RepaintBoundary — isolated PictureLayer per boundary
-  ⬜ TransformLayer — zero-repaint scroll
-  ⬜ Focus system wired end-to-end (D060)
-  ⬜ Navigation route stack (D061)
+  ✅ RepaintBoundary — isolated PictureLayer per boundary (D071)
+  ✅ Focus system wired end-to-end (D069)
+  ✅ Navigation route stack — ScreenNav<R> reactive hook (D070)
+  ⬜ TransformLayer — zero-repaint scroll (deferred post Phase 14)
 
 Phase 15:
-  ⬜ wgpu GPU compositor
-  ⬜ Texture atlas, GPU blending
-  ⬜ 120fps capable
+  ✅ wgpu GPU compositor — tezzera-compositor crate, GpuPresenter (D072–D075)
+  ✅ CPU pixel buffer → GPU texture → fullscreen-quad blit (Metal/Vulkan/DX12)
+  ✅ Softbuffer fallback when no GPU adapter available (D074)
+  ⬜ Texture atlas for layer compositing (Phase 16)
+  ⬜ Multi-layer GPU blending (Phase 16)
 ```

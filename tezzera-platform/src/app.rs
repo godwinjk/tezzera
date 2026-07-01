@@ -83,6 +83,7 @@ impl PlatformWindow {
             window: None,
             surface: None,
             context: None,
+            presenter: None,
             canvas: SkiaCanvas::new(w, h),
             pending_events: Vec::new(),
             frame_counter: 0,
@@ -106,6 +107,8 @@ struct AppState<F> {
     window: Option<Arc<WinitWindow>>,
     context: Option<softbuffer::Context<Arc<WinitWindow>>>,
     surface: Option<softbuffer::Surface<Arc<WinitWindow>, Arc<WinitWindow>>>,
+    // GPU compositor (D072–D075). None → softbuffer fallback path is used.
+    presenter: Option<tezzera_compositor::GpuPresenter>,
     canvas: SkiaCanvas,
     pending_events: Vec<InputEvent>,
     frame_counter: u64,
@@ -123,10 +126,23 @@ impl<F: FnMut(&mut SkiaCanvas, &[InputEvent])> ApplicationHandler<FrameRequest> 
                 self.config.height,
             ));
         let window = Arc::new(event_loop.create_window(attrs).unwrap());
-        let context = softbuffer::Context::new(window.clone()).unwrap();
-        let surface = softbuffer::Surface::new(&context, window.clone()).unwrap();
-        self.context = Some(context);
-        self.surface = Some(surface);
+
+        // Try GPU compositor (D072). Fall back to softbuffer if unavailable.
+        let presenter = tezzera_compositor::GpuPresenter::new(
+            window.clone(),
+            self.config.width,
+            self.config.height,
+        );
+        if presenter.is_some() {
+            log::info!("tezzera-platform: using GPU compositor (wgpu)");
+        } else {
+            log::info!("tezzera-platform: GPU compositor unavailable, using softbuffer");
+            let context = softbuffer::Context::new(window.clone()).unwrap();
+            let surface = softbuffer::Surface::new(&context, window.clone()).unwrap();
+            self.context = Some(context);
+            self.surface = Some(surface);
+        }
+        self.presenter = presenter;
         self.window = Some(window);
     }
 
@@ -156,13 +172,14 @@ impl<F: FnMut(&mut SkiaCanvas, &[InputEvent])> ApplicationHandler<FrameRequest> 
                     return;
                 }
 
-                let surface = self.surface.as_mut().unwrap();
-                surface
-                    .resize(
-                        NonZeroU32::new(phys_w).unwrap(),
-                        NonZeroU32::new(phys_h).unwrap(),
-                    )
-                    .unwrap();
+                if let Some(surface) = self.surface.as_mut() {
+                    surface
+                        .resize(
+                            NonZeroU32::new(phys_w).unwrap(),
+                            NonZeroU32::new(phys_h).unwrap(),
+                        )
+                        .unwrap();
+                }
 
                 let now = Instant::now();
                 let dt = self.last_frame_time
@@ -194,17 +211,21 @@ impl<F: FnMut(&mut SkiaCanvas, &[InputEvent])> ApplicationHandler<FrameRequest> 
                 let events = std::mem::take(&mut self.pending_events);
                 (self.paint_fn)(&mut self.canvas, &events);
 
-                // 1:1 blit — no upscaling needed; play_picture already wrote
-                // every physical pixel at the correct HiDPI resolution.
-                let mut buffer = surface.buffer_mut().unwrap();
+                // Present the frame — GPU compositor when available (D074),
+                // softbuffer memcpy as fallback.
                 let pixels = self.canvas.pixels();
-                for (i, pixel) in buffer.iter_mut().enumerate() {
-                    let r = pixels[i * 4];
-                    let g = pixels[i * 4 + 1];
-                    let b = pixels[i * 4 + 2];
-                    *pixel = ((r as u32) << 16) | ((g as u32) << 8) | b as u32;
+                if let Some(presenter) = &mut self.presenter {
+                    presenter.present(pixels, phys_w, phys_h);
+                } else if let Some(surface) = &mut self.surface {
+                    let mut buffer = surface.buffer_mut().unwrap();
+                    for (i, pixel) in buffer.iter_mut().enumerate() {
+                        let r = pixels[i * 4];
+                        let g = pixels[i * 4 + 1];
+                        let b = pixels[i * 4 + 2];
+                        *pixel = ((r as u32) << 16) | ((g as u32) << 8) | b as u32;
+                    }
+                    buffer.present().unwrap();
                 }
-                buffer.present().unwrap();
 
                 #[cfg(debug_assertions)]
                 {
@@ -219,6 +240,9 @@ impl<F: FnMut(&mut SkiaCanvas, &[InputEvent])> ApplicationHandler<FrameRequest> 
             }
 
             WindowEvent::Resized(size) => {
+                if let Some(presenter) = &mut self.presenter {
+                    presenter.resize(size.width, size.height);
+                }
                 self.pending_events.push(InputEvent::WindowResized {
                     width: size.width,
                     height: size.height,

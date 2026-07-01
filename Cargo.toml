@@ -33,6 +33,7 @@ members = [
     "tezzera-ime",
     "tezzera-media",
     "tezzera-test-utils",
+    "tezzera-compositor",
 ]
 resolver = "2"
 
