@@ -237,18 +237,12 @@ impl<F: FnMut(&mut SkiaCanvas, &mut SkiaCanvas, &[InputEvent])> ApplicationHandl
                 // with softbuffer fallback that CPU-composites overlay on top.
                 if let Some(presenter) = &mut self.presenter {
                     presenter.present_layers(&[
-                        tezzera_compositor::CompositorLayer {
-                            pixels:  self.canvas.pixels(),
-                            width:   phys_w,
-                            height:  phys_h,
-                            opacity: 1.0,
-                        },
-                        tezzera_compositor::CompositorLayer {
-                            pixels:  self.overlay_canvas.pixels(),
-                            width:   phys_w,
-                            height:  phys_h,
-                            opacity: 1.0,
-                        },
+                        tezzera_compositor::CompositorLayer::opaque(
+                            self.canvas.pixels(), phys_w, phys_h,
+                        ),
+                        tezzera_compositor::CompositorLayer::opaque(
+                            self.overlay_canvas.pixels(), phys_w, phys_h,
+                        ),
                     ]);
                 } else if let Some(surface) = &mut self.surface {
                     // Softbuffer fallback: CPU-blit base canvas to buffer.

@@ -9,7 +9,7 @@ pub use crate::{
     Card, Center, Checkbox, Chip, ColoredBox, Column, Container,
     Divider, EdgeInsets, Expanded, Icon, IconKind,
     ListTile, ListView, NavItem, NavRail, Padding, ProgressBar,
-    RectReader,
+    RectReader, RepaintBoundary, TransformLayer,
     Row, Scaffold, ScrollView, SizedBox, Slider, Spacer, Stack, Switch,
     Tab, TabBar, Text, TextInput, Tooltip,
     Image, ImageCache, ImageFit, ImageSource, ImageWidget,

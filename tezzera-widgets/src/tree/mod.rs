@@ -44,6 +44,7 @@ pub mod tab;
 pub mod text;
 pub mod text_input;
 pub mod tooltip;
+pub mod transform_layer;
 
 pub use app::WidgetApp;
 pub use app_bar::AppBar;
@@ -84,6 +85,7 @@ pub use tab::{Tab, TabBar};
 pub use text::{Text, TextAlign, FontWeight};
 pub use text_input::TextInput;
 pub use tooltip::Tooltip;
+pub use transform_layer::TransformLayer;
 
 use std::rc::Rc;
 use std::cell::RefCell;

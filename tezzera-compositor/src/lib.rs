@@ -22,11 +22,23 @@ use wgpu::util::DeviceExt;
 ///
 /// `pixels` must be an RGBA8 byte slice of exactly `width * height * 4` bytes.
 /// `opacity` scales the entire layer's alpha (1.0 = fully opaque, 0.0 = invisible).
+/// `offset` is a UV-space scroll offset `(offset_pixels_x / tex_w, offset_y / tex_h)`.
+/// With offset `(0.0, 0.0)` the layer is rendered without scrolling (Phase 15/16 behaviour).
+/// Out-of-range UV due to the offset returns transparent (D081).
 pub struct CompositorLayer<'a> {
     pub pixels:  &'a [u8],
     pub width:   u32,
     pub height:  u32,
     pub opacity: f32,
+    /// UV-space scroll offset. Use `(0.0, 0.0)` for no scroll (D080).
+    pub offset:  (f32, f32),
+}
+
+impl<'a> CompositorLayer<'a> {
+    /// Convenience: layer with no scroll offset.
+    pub fn opaque(pixels: &'a [u8], width: u32, height: u32) -> Self {
+        Self { pixels, width, height, opacity: 1.0, offset: (0.0, 0.0) }
+    }
 }
 
 /// GPU compositor state. One instance per window.
@@ -146,6 +158,17 @@ impl GpuPresenter {
                     ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
                     count: None,
                 },
+                // Binding 2: LayerUniforms (offset + pad, 16 bytes) (D081)
+                wgpu::BindGroupLayoutEntry {
+                    binding:    2,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Buffer {
+                        ty:                 wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size:   None,
+                    },
+                    count: None,
+                },
             ],
         });
 
@@ -243,12 +266,7 @@ impl GpuPresenter {
 
     /// Present a single opaque layer (backward-compatible shim for Phase 15 API).
     pub fn present(&mut self, pixels: &[u8], pixel_width: u32, pixel_height: u32) {
-        self.present_layers(&[CompositorLayer {
-            pixels,
-            width:   pixel_width,
-            height:  pixel_height,
-            opacity: 1.0,
-        }]);
+        self.present_layers(&[CompositorLayer::opaque(pixels, pixel_width, pixel_height)]);
     }
 
     /// Composite and present one or more layers (D076, D077, D079).
@@ -294,6 +312,22 @@ impl GpuPresenter {
             );
             let tex_view = texture.create_view(&wgpu::TextureViewDescriptor::default());
 
+            // Write layer uniforms: offset (UV-space) + 8 bytes padding (D081).
+            // Layout: [offset_x f32][offset_y f32][pad f32][pad f32] = 16 bytes
+            let uniform_data: [f32; 4] = [layer.offset.0, layer.offset.1, 0.0, 0.0];
+            // SAFETY: [f32; 4] is 16 bytes, all bit patterns valid for u8.
+            let uniform_bytes: &[u8] = unsafe {
+                std::slice::from_raw_parts(
+                    uniform_data.as_ptr() as *const u8,
+                    std::mem::size_of::<[f32; 4]>(),
+                )
+            };
+            let uniform_buf = self.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label:    Some("layer-uniforms"),
+                contents: uniform_bytes,
+                usage:    wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            });
+
             let bind_group = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
                 label:   Some("layer-bg"),
                 layout:  &self.bind_group_layout,
@@ -305,6 +339,10 @@ impl GpuPresenter {
                     wgpu::BindGroupEntry {
                         binding:  1,
                         resource: wgpu::BindingResource::Sampler(&self.sampler),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding:  2,
+                        resource: uniform_buf.as_entire_binding(),
                     },
                 ],
             });

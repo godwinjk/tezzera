@@ -1011,6 +1011,38 @@ Implementation: `RepaintBoundary` is a `NativeElement` with tag `"RepaintBoundar
 
 ---
 
+### D080 — TransformLayer Model
+**Status**: LOCKED
+**Question**: How does TransformLayer capture content and apply GPU-side scroll?
+**Decision**: `TransformLayer<W>` wraps a child widget. `layout()` reports the viewport size. `paint()` shifts the child origin by `-scroll_y` (and `-scroll_x`) so content scrolls within the viewport. `CompositorLayer.offset` carries the UV-space scroll offset to the GPU; the shader returns transparent for out-of-range UV. Phase 17 uses CPU shift; Phase 18 adds full GPU-texture-per-scroll.
+**Reason**: Establishes the widget API and GPU offset pipeline. Phase 18 replaces the CPU shift with a frozen-texture + uniform-only update path.
+**Affects**: `tezzera-widgets`, `tezzera-compositor`
+
+---
+
+### D081 — Transform Uniform Buffer
+**Status**: LOCKED
+**Question**: How is the scroll offset passed to the WGSL shader?
+**Decision**: A `wgpu::Buffer` with `UNIFORM | COPY_DST` usage holds `[f32; 4]` = `[offset_x, offset_y, 0.0, 0.0]`. The shader reads `@group(0) @binding(2) var<uniform> u_layer: LayerUniforms`. UV is shifted by `u_layer.offset`; out-of-range returns `vec4(0)` (transparent). Buffer is created via `create_buffer_init` each frame in Phase 17; Phase 18 will reuse a persistent buffer and `queue.write_buffer`.
+**Reason**: Minimal change to bind group layout — add one uniform binding. No vertex buffer changes. All existing layers pass `(0.0, 0.0)` offset with zero overhead.
+**Affects**: `tezzera-compositor`
+
+---
+
+### D082 — TransformLayer Size Limit
+**Status**: LOCKED
+**Decision**: Phase 17 caps at `MAX_TRANSFORM_DIM = 4096` physical pixels. Content exceeding this falls back to CPU clip scroll (unchanged behaviour). Cap is checked at capture time; a debug warning is emitted.
+**Affects**: `tezzera-widgets`
+
+---
+
+### D083 — ScrollView Integration
+**Status**: DEFERRED → Phase 18
+**Decision**: Phase 17 provides `TransformLayer<W>` as a first-class widget. Phase 18 integrates it into `ScrollView` transparently. Users can use `TransformLayer` directly in Phase 17.
+**Affects**: `tezzera-widgets`
+
+---
+
 ## DEFERRED DECISIONS
 
 ```

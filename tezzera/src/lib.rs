@@ -571,6 +571,7 @@ pub use tezzera_widgets::{
     Padding, ProgressBar,
     RectReader,
     RepaintBoundary,
+    TransformLayer,
     OverlayEntry, LayerId, LayerPosition, InputBehavior, FocusBehavior, ScrimConfig,
     push_overlay,
     Row, Scaffold, ScrollView,
@@ -638,6 +639,7 @@ pub mod prelude {
     pub use tezzera_a11y::FocusNode;
     pub use tezzera_widgets::FocusApi;
     pub use tezzera_widgets::RepaintBoundary;
+    pub use tezzera_widgets::TransformLayer;
     pub use tezzera_nav::ScreenNav;
     pub use tezzera_render::canvas::Color;
     pub use tezzera_theme::{ThemeData, ColorScheme};
