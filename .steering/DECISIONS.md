@@ -975,6 +975,42 @@ Implementation: `RepaintBoundary` is a `NativeElement` with tag `"RepaintBoundar
 
 ---
 
+### D076 — Layer Compositing Model
+**Status**: LOCKED
+**Question**: How should multiple render layers be composited?
+**Decision**: Each logical layer (base, overlay) is a separate `SkiaCanvas`. Each canvas produces its own RGBA pixel buffer. `GpuPresenter::present_layers(&[CompositorLayer])` uploads N textures and composites them bottom-to-top via `SRC_ALPHA` over `ONE_MINUS_SRC_ALPHA` in two sequential render passes.
+**Reason**: Isolates base/overlay rendering so overlay changes (dialog show/hide) do not force a base layer CPU re-render. Foundation for per-layer opacity and transform in Phase 17.
+**Affects**: `tezzera-compositor`, `tezzera/src/lib.rs`, `tezzera-render`
+
+---
+
+### D077 — CompositorLayer Struct
+**Status**: LOCKED
+**Question**: What is the interface between the render loop and the GPU compositor for multi-layer presentation?
+**Decision**: `pub struct CompositorLayer<'a> { pixels: &'a [u8], width: u32, height: u32, opacity: f32 }`. `GpuPresenter::present_layers(&[CompositorLayer])` composites them. The old `present()` is kept as a shim for backward compatibility.
+**Reason**: Minimal struct — only what's needed for Phase 16. `opacity` is per-layer, applied as a scalar to the source alpha before blending.
+**Affects**: `tezzera-compositor`
+
+---
+
+### D078 — Overlay Canvas Clear
+**Status**: LOCKED
+**Question**: How is the overlay canvas initialized each frame?
+**Decision**: `SkiaCanvas::clear_transparent()` fills the pixmap with RGBA(0,0,0,0) before each overlay paint pass. Transparent pixels in the overlay texture pass through to the base layer via the blend equation.
+**Reason**: Ensures overlay content from the previous frame does not persist when overlays are closed or repositioned.
+**Affects**: `tezzera-render`, `tezzera/src/lib.rs`
+
+---
+
+### D079 — Multi-Layer WGSL Shader
+**Status**: LOCKED
+**Question**: How does the compositor shader blend N layers?
+**Decision**: Two sequential render passes on the same surface target. Pass 1: blit base texture with `REPLACE` blend (opaque). Pass 2: blit overlay texture with `SRC_ALPHA` / `ONE_MINUS_SRC_ALPHA` blend (alpha-over). The overlay pipeline uses `blend: Some(wgpu::BlendState::ALPHA_BLENDING)`. Both passes use the same fullscreen-quad vertex shader.
+**Reason**: Two-pass avoids binding limitations and works on all wgpu backends. Fragment output is `base_color * (1 − overlay.a) + overlay_color * overlay.a` — the standard Porter-Duff over operation.
+**Affects**: `tezzera-compositor`
+
+---
+
 ## DEFERRED DECISIONS
 
 ```

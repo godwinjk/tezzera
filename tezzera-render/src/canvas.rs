@@ -103,6 +103,14 @@ impl SkiaCanvas {
         );
     }
 
+    /// Fill the entire canvas with fully-transparent pixels (D078).
+    ///
+    /// Used to reset the overlay canvas before each frame's overlay paint pass
+    /// so that closed or repositioned overlays do not persist.
+    pub fn clear_transparent(&mut self) {
+        self.pixmap.fill(tiny_skia::Color::TRANSPARENT);
+    }
+
     /// Fill a rectangle with a solid color.
     pub fn fill_rect(&mut self, rect: Rect, color: Color) {
         // Skip transparent, degenerate, or invisible rects.

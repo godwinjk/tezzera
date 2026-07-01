@@ -122,7 +122,7 @@ impl App {
         PlatformWindow::new()
             .title(self.title)
             .size(width, height)
-            .run(move |canvas, events| {
+            .run_layered(move |canvas, overlay_canvas, events| {
                 // ── Drain dirty-component set for this frame ───────────────
                 let global_dirty = tezzera_state::is_global_dirty();
                 let dirty_ids = tezzera_state::take_dirty_components();
@@ -186,17 +186,21 @@ impl App {
                 let picture = recorder.finish();
                 canvas.play_picture(&picture, &font);
 
-                // ── Overlay pass — second recorder, always on top ──────────
+                // ── Overlay pass — second recorder into overlay_canvas (D076) ─
+                // The platform already cleared overlay_canvas to transparent
+                // before calling this closure (D078). We record overlay widgets
+                // into a separate PictureRecorder and play into overlay_canvas,
+                // which the platform uploads as a second GPU texture layer.
                 let entries = drain_overlays();
+                let ov_hit_targets: Rc<RefCell<Vec<HitTarget>>> =
+                    Rc::new(RefCell::new(Vec::new()));
+
                 if !entries.is_empty() {
                     use tezzera_core::types::{Point, Rect, Size};
                     use tezzera_widgets::tree::LayerPosition;
                     let mut ov_recorder = tezzera_render::PictureRecorder::new();
-                    let ov_hit_targets: Rc<RefCell<Vec<HitTarget>>> =
-                        Rc::new(RefCell::new(Vec::new()));
 
                     for entry in entries {
-                        // Draw scrim first if configured
                         if let Some(scrim) = &entry.scrim {
                             let scrim_rect = Rect {
                                 origin: Point { x: 0.0, y: 0.0 },
@@ -208,13 +212,11 @@ impl App {
                             });
                         }
 
-                        // Determine overlay widget rect from LayerPosition
                         let loose_c = tezzera_layout::Constraints::loose(win_w, win_h);
                         let lctx = tezzera_widgets::tree::LayoutCtx::new(
                             loose_c, &font, &theme,
                         );
                         let widget_size = entry.widget.layout(&lctx);
-
                         let origin = match &entry.position {
                             LayerPosition::Absolute(p) => *p,
                             LayerPosition::Centered => Point {
@@ -240,11 +242,11 @@ impl App {
                         entry.widget.paint(&mut ov_ctx);
                     }
 
+                    // Play overlay picture into the dedicated overlay canvas (D078).
                     let ov_picture = ov_recorder.finish();
-                    canvas.play_picture(&ov_picture, &font);
+                    overlay_canvas.play_picture(&ov_picture, &font);
 
-                    // Merge overlay hit targets into the main list
-                    // (overlay targets are checked first during event routing)
+                    // Merge overlay hit targets — overlay checked first (D079).
                     let ov_targets = ov_hit_targets.borrow();
                     let mut main_targets = hit_targets.borrow_mut();
                     for t in ov_targets.iter() {

@@ -56,9 +56,25 @@ impl PlatformWindow {
         self
     }
 
-    pub fn run<F>(self, paint_fn: F)
+    /// Run with a single canvas (backward-compatible).
+    ///
+    /// Calls the closure with the base canvas only. The overlay canvas is
+    /// always transparent. Internally uses `run_layered` with an adapter.
+    pub fn run<F>(self, mut paint_fn: F)
     where
         F: FnMut(&mut SkiaCanvas, &[InputEvent]),
+    {
+        self.run_layered(move |base, _overlay, events| paint_fn(base, events));
+    }
+
+    /// Run with two canvases: base layer and overlay layer (D076, Phase 16).
+    ///
+    /// The platform clears the overlay canvas to transparent before each call.
+    /// Both canvases are uploaded as separate GPU textures and alpha-blended
+    /// on the GPU (base first, overlay on top with `ALPHA_BLENDING`).
+    pub fn run_layered<F>(self, paint_fn: F)
+    where
+        F: FnMut(&mut SkiaCanvas, &mut SkiaCanvas, &[InputEvent]),
     {
         let event_loop = EventLoop::<FrameRequest>::with_user_event()
             .build()
@@ -85,6 +101,7 @@ impl PlatformWindow {
             context: None,
             presenter: None,
             canvas: SkiaCanvas::new(w, h),
+            overlay_canvas: SkiaCanvas::new(w, h),
             pending_events: Vec::new(),
             frame_counter: 0,
             cursor_x: 0.0,
@@ -110,6 +127,8 @@ struct AppState<F> {
     // GPU compositor (D072–D075). None → softbuffer fallback path is used.
     presenter: Option<tezzera_compositor::GpuPresenter>,
     canvas: SkiaCanvas,
+    // Overlay layer canvas — cleared to transparent each frame (D078).
+    overlay_canvas: SkiaCanvas,
     pending_events: Vec<InputEvent>,
     frame_counter: u64,
     cursor_x: f32,
@@ -117,7 +136,7 @@ struct AppState<F> {
     last_frame_time: Option<Instant>,
 }
 
-impl<F: FnMut(&mut SkiaCanvas, &[InputEvent])> ApplicationHandler<FrameRequest> for AppState<F> {
+impl<F: FnMut(&mut SkiaCanvas, &mut SkiaCanvas, &[InputEvent])> ApplicationHandler<FrameRequest> for AppState<F> {
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
         let attrs = WindowAttributes::default()
             .with_title(&self.config.title)
@@ -199,30 +218,60 @@ impl<F: FnMut(&mut SkiaCanvas, &[InputEvent])> ApplicationHandler<FrameRequest> 
                     timestamp: now,
                 });
 
-                // Canvas lives at physical size; play_picture scales all logical
-                // coordinates by `scale` so glyphs and shapes are sharp at full
-                // HiDPI resolution without any upscaling blur.
+                // Resize base + overlay canvases to match physical window size.
                 if self.canvas.width() != phys_w
                     || self.canvas.height() != phys_h
                     || (self.canvas.scale() - scale).abs() > 0.01
                 {
-                    self.canvas = SkiaCanvas::new_hidpi(phys_w, phys_h, scale);
+                    self.canvas         = SkiaCanvas::new_hidpi(phys_w, phys_h, scale);
+                    self.overlay_canvas = SkiaCanvas::new_hidpi(phys_w, phys_h, scale);
                 }
-                let events = std::mem::take(&mut self.pending_events);
-                (self.paint_fn)(&mut self.canvas, &events);
 
-                // Present the frame — GPU compositor when available (D074),
-                // softbuffer memcpy as fallback.
-                let pixels = self.canvas.pixels();
+                // Clear overlay to transparent before each frame (D078).
+                self.overlay_canvas.clear_transparent();
+
+                let events = std::mem::take(&mut self.pending_events);
+                (self.paint_fn)(&mut self.canvas, &mut self.overlay_canvas, &events);
+
+                // Present the frame — GPU multi-layer compositor (D076, D079),
+                // with softbuffer fallback that CPU-composites overlay on top.
                 if let Some(presenter) = &mut self.presenter {
-                    presenter.present(pixels, phys_w, phys_h);
+                    presenter.present_layers(&[
+                        tezzera_compositor::CompositorLayer {
+                            pixels:  self.canvas.pixels(),
+                            width:   phys_w,
+                            height:  phys_h,
+                            opacity: 1.0,
+                        },
+                        tezzera_compositor::CompositorLayer {
+                            pixels:  self.overlay_canvas.pixels(),
+                            width:   phys_w,
+                            height:  phys_h,
+                            opacity: 1.0,
+                        },
+                    ]);
                 } else if let Some(surface) = &mut self.surface {
+                    // Softbuffer fallback: CPU-blit base canvas to buffer.
+                    // Overlay is CPU-composited on top (same as pre-Phase 16
+                    // behaviour — overlay was already drawn into main canvas).
+                    let base_pixels    = self.canvas.pixels();
+                    let overlay_pixels = self.overlay_canvas.pixels();
                     let mut buffer = surface.buffer_mut().unwrap();
                     for (i, pixel) in buffer.iter_mut().enumerate() {
-                        let r = pixels[i * 4];
-                        let g = pixels[i * 4 + 1];
-                        let b = pixels[i * 4 + 2];
-                        *pixel = ((r as u32) << 16) | ((g as u32) << 8) | b as u32;
+                        let bi = i * 4;
+                        let br = base_pixels[bi]     as u32;
+                        let bg = base_pixels[bi + 1] as u32;
+                        let bb = base_pixels[bi + 2] as u32;
+                        let oa = overlay_pixels[bi + 3] as u32;
+                        let or_ = overlay_pixels[bi]     as u32;
+                        let og  = overlay_pixels[bi + 1] as u32;
+                        let ob  = overlay_pixels[bi + 2] as u32;
+                        // Porter-Duff "over" in integer arithmetic.
+                        let inv = 255 - oa;
+                        let r = (or_ * oa + br * inv) / 255;
+                        let g = (og  * oa + bg * inv) / 255;
+                        let b = (ob  * oa + bb * inv) / 255;
+                        *pixel = (r << 16) | (g << 8) | b;
                     }
                     buffer.present().unwrap();
                 }
